@@ -9,6 +9,7 @@ using CityPrint.App.Controls;
 using CityPrint.App.Rendering;
 using CityPrint.App.Services;
 using CityPrint.App.ViewModels;
+using CityPrint.Core.Carto;
 using CityPrint.Core.Map;
 using Dock.Model.Avalonia.Controls;
 using Dock.Model.Core;
@@ -19,6 +20,8 @@ namespace CityPrint.App.Views;
 public partial class MainWindow : Window
 {
     private static readonly FilePickerFileType OsmFiles = new("OSM XML") { Patterns = ["*.osm", "*.xml"] };
+    private static readonly FilePickerFileType CartoFiles = new("Carto GeoJSON (any layer)") { Patterns = ["*.json"] };
+    private static readonly FilePickerFileType ExportFiles = new("Map exports") { Patterns = ["*.osm", "*.xml", "*.json"] };
     private static readonly FilePickerFileType PngFiles = new("PNG image") { Patterns = ["*.png"] };
 
     private AppState State => AppState.Current;
@@ -63,6 +66,7 @@ public partial class MainWindow : Window
         bool ctrl = e.KeyModifiers == KeyModifiers.Control;
         if (ctrl && e.Key == Key.O) OnOpen(null, e);
         else if (ctrl && e.Key == Key.G) OnOpenGameExport(null, e);
+        else if (e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.G) OnOpenCartoExport(null, e);
         else if (ctrl && e.Key == Key.E) OnExportView(null, e);
         else if (ctrl && e.Key == Key.P) OnPoster(null, e);
         else if (ctrl && e.Key == Key.OemComma) OnSettings(null, e);
@@ -101,7 +105,7 @@ public partial class MainWindow : Window
             ToolTip.SetTip(item, path);
             item.Click += async (_, _) =>
             {
-                if (File.Exists(path)) await State.LoadAsync(path);
+                if (File.Exists(path) || Directory.Exists(path)) await State.LoadAsync(path);
                 else State.Status = $"{path} no longer exists.";
             };
             RecentMenu.Items.Add(item);
@@ -129,18 +133,27 @@ public partial class MainWindow : Window
 
     private async void OnOpenGameExport(object? sender, RoutedEventArgs e)
     {
-        var export = Path.Combine(AppState.GameExportFolder, "export.osm");
-        if (File.Exists(export)) await State.LoadAsync(export);
+        // The mod's file name is configurable, so take the newest export rather than assuming export.osm.
+        var export = Directory.Exists(AppState.GameExportFolder)
+            ? new DirectoryInfo(AppState.GameExportFolder).EnumerateFiles("*.osm").MaxBy(f => f.LastWriteTimeUtc)?.FullName
+            : null;
+        if (export != null) await State.LoadAsync(export);
         else await PickAndLoad(AppState.GameExportFolder);
+    }
+
+    private async void OnOpenCartoExport(object? sender, RoutedEventArgs e)
+    {
+        if (CartoImporter.IsCartoExport(AppState.CartoExportFolder)) await State.LoadAsync(AppState.CartoExportFolder);
+        else await PickAndLoad(Directory.Exists(AppState.CartoExportFolder) ? AppState.CartoExportFolder : null);
     }
 
     private async Task PickAndLoad(string? startFolder)
     {
         var options = new FilePickerOpenOptions
         {
-            Title = "Open OSM export",
+            Title = "Open OSM or Carto export",
             AllowMultiple = false,
-            FileTypeFilter = [OsmFiles, FilePickerFileTypes.All],
+            FileTypeFilter = [ExportFiles, OsmFiles, CartoFiles, FilePickerFileTypes.All],
         };
         var folder = startFolder ?? (State.Model?.Document.FilePath is { } p ? Path.GetDirectoryName(p) : AppState.GameExportFolder);
         if (folder != null && Directory.Exists(folder))
@@ -226,6 +239,7 @@ public partial class MainWindow : Window
     // ---- help ------------------------------------------------------------
 
     private void OnOpenExportFolder(object? sender, RoutedEventArgs e) => Shell.OpenFolder(AppState.GameExportFolder);
+    private void OnOpenCartoFolder(object? sender, RoutedEventArgs e) => Shell.OpenFolder(AppState.CartoExportFolder);
     private void OnOpenSettingsFolder(object? sender, RoutedEventArgs e) => Shell.OpenFolder(AppSettings.Folder);
 
     private async void OnAbout(object? sender, RoutedEventArgs e)

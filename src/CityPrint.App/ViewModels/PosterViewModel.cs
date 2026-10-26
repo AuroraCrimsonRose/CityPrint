@@ -70,6 +70,12 @@ public sealed partial class PosterViewModel : ObservableObject
             SaveDefaults();
     }
 
+    /// <summary>Screen presets have a natural orientation (a phone is portrait, a monitor landscape).</summary>
+    partial void OnPaperChanged(PaperSize value)
+    {
+        if (value.IsScreen) Landscape = value.PixelWidth > value.PixelHeight;
+    }
+
     private void Sync()
     {
         Spec.Title = Title;

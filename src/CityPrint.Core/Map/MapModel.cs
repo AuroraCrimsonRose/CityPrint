@@ -11,6 +11,10 @@ public sealed class MapModel
 
     public OsmDocument Document { get; }
     public List<MapFeature> Features { get; } = new();
+
+    /// <summary>Road outlines (Carto exports have them). Kept apart from <see cref="Features"/> so picking,
+    /// search and statistics see each road once, through its centreline.</summary>
+    public List<MapFeature> Surfaces { get; } = new();
     public Dictionary<Category, int> CountByCategory { get; } = new();
 
     public double MinX { get; private set; }
@@ -27,6 +31,8 @@ public sealed class MapModel
     {
         var m = new MapModel(doc);
         m.BuildFeatures();
+        m.MergeSegments();
+        m.AddInferred();
         m.BuildIndex();
         return m;
     }
@@ -38,7 +44,8 @@ public sealed class MapModel
         foreach (var rel in Document.Relations.Values)
         {
             if (!rel.Is("type", "multipolygon") && !rel.Is("type", "boundary")) continue;
-            var cat = Classifier.ClassifyArea(rel);
+            var surface = Classifier.ClassifySurface(rel);
+            var cat = surface ?? Classifier.ClassifyArea(rel);
             var outer = new List<long[]>();
             var inner = new List<long[]>();
             foreach (var mem in rel.Members)
@@ -52,7 +59,7 @@ public sealed class MapModel
             var outerRings = JoinRings(outer).Select(Coords).Where(c => c.Length >= 6).ToList();
             var innerRings = JoinRings(inner).Select(Coords).Where(c => c.Length >= 6).ToList();
             if (outerRings.Count == 0) continue;
-            Add(rel, cat.Value, GeometryKind.Area, [.. outerRings, .. innerRings], innerRings.Count);
+            Add(rel, cat.Value, GeometryKind.Area, [.. outerRings, .. innerRings], innerRings.Count, surface != null);
         }
 
         foreach (var w in Document.Ways.Values)
@@ -61,6 +68,11 @@ public sealed class MapModel
             var coords = Coords(w.NodeRefs);
             if (coords.Length < 4) continue;
 
+            if (w.IsClosed && Classifier.ClassifySurface(w) is { } surface)
+            {
+                Add(w, surface, GeometryKind.Area, [coords], surface: true);
+                continue;
+            }
             var line = Classifier.ClassifyLine(w);
             if (line is not null)
             {
@@ -83,7 +95,66 @@ public sealed class MapModel
         Layers = Features.Where(f => f.Kind == GeometryKind.Line).Select(f => f.Layer).Append(0).Distinct().Order().ToList();
     }
 
-    private void Add(OsmElement e, Category cat, GeometryKind kind, IReadOnlyList<double[]> parts, int holes = 0)
+    /// <summary>Categories whose segments are joined into one line where they meet.</summary>
+    private static readonly HashSet<Category> Joined =
+        [Category.Footway, Category.Cycleway, Category.Ferry, Category.Rail, Category.Tram, Category.Subway, Category.Power];
+
+    /// <summary>
+    /// Exports cut paths, ferry routes and tracks into many short pieces; drawn separately, their dash
+    /// patterns restart at every joint. Pieces that meet and share a name, layer and kind become one line.
+    /// The joined line keeps the first piece's element for the inspector.
+    /// </summary>
+    private void MergeSegments()
+    {
+        var merged = new List<MapFeature>();
+        var groups = Features.Where(f => f.Kind == GeometryKind.Line && Joined.Contains(f.Category))
+            .GroupBy(f => (f.Category, f.Name, f.Layer, f.IsBridge, f.IsTunnel, f.WidthMetres, f.Colour))
+            .Where(g => g.Count() > 1).ToList();
+        if (groups.Count == 0) return;
+        var replaced = new HashSet<MapFeature>();
+        foreach (var g in groups)
+        {
+            var first = g.First();
+            foreach (var line in Polylines.Join(g.SelectMany(f => f.Parts)))
+            {
+                var f = new MapFeature
+                {
+                    Element = first.Element,
+                    Category = first.Category,
+                    Kind = GeometryKind.Line,
+                    Parts = [line],
+                    Layer = first.Layer,
+                    IsBridge = first.IsBridge,
+                    IsTunnel = first.IsTunnel,
+                    Name = first.Name,
+                    Lanes = first.Lanes,
+                    WidthMetres = first.WidthMetres,
+                    Colour = first.Colour,
+                };
+                f.ComputeMetrics();
+                merged.Add(f);
+            }
+            replaced.UnionWith(g);
+        }
+        var kept = Features.Where(f => !replaced.Contains(f)).Concat(merged).ToList();
+        Features.Clear();
+        Features.AddRange(kept);
+        CountByCategory.Clear();
+        for (int i = 0; i < Features.Count; i++)
+        {
+            Features[i].Index = i;
+            CountByCategory[Features[i].Category] = CountByCategory.GetValueOrDefault(Features[i].Category) + 1;
+        }
+    }
+
+    private void AddInferred()
+    {
+        var r = Inference.Run(Features);
+        foreach (var (e, rings, holes) in r.Parks) Add(e, Category.InferredPark, GeometryKind.Area, rings, holes);
+        foreach (var (e, line) in r.ShoppingStreets) Add(e, Category.ShoppingStreet, GeometryKind.Line, [line]);
+    }
+
+    private void Add(OsmElement e, Category cat, GeometryKind kind, IReadOnlyList<double[]> parts, int holes = 0, bool surface = false)
     {
         bool bridge = e.Tag("bridge") is { } b && b != "no";
         bool tunnel = e.Tag("tunnel") is { } t && t != "no";
@@ -99,6 +170,13 @@ public sealed class MapModel
         uint? colour = null;
         if (cat == Category.TransitLine)
             colour = ParseColour(e.Tag("osm_export_route_color")) ?? MapStyle.TransitColour(e.Tag("osm_export_route"));
+        else if (cat == Category.Zoning)
+            colour = ParseColour(e.Tag("colour"));
+        else if (cat == Category.Building)
+            colour = TypeColours.Building(e);
+        string? icon = null;
+        if (cat == Category.Poi)
+            (colour, icon) = TypeColours.Poi(e);
 
         var f = new MapFeature
         {
@@ -115,8 +193,15 @@ public sealed class MapModel
             Lanes = lanes,
             WidthMetres = width,
             Colour = colour,
+            Icon = icon,
+            IsSurface = surface,
         };
         f.ComputeMetrics();
+        if (surface)
+        {
+            Surfaces.Add(f);
+            return;
+        }
         Features.Add(f);
         CountByCategory[cat] = CountByCategory.GetValueOrDefault(cat) + 1;
     }

@@ -69,10 +69,21 @@ public static class MapRenderer
                     if (MapPainter.Area(b, pc) is not { } paint) continue;
                     ctx.DrawGeometry(paint.Fill != 0 ? Brush(paint.Fill) : null, paint.Outline is { } s ? Pen(s) : null, AreaGeometry(b));
                 }
+                bool surfaces = MapPainter.UseSurfaces(scene, pc);
                 foreach (int layer in scene.Layers)
                 {
                     using var _ = layer < 0 ? ctx.PushOpacity(0.45) : default(DrawingContext.PushedState?);
-                    foreach (var (bucket, stroke) in MapPainter.LineLayer(scene.Lines.Where(b => b.Layer == layer), pc))
+                    if (surfaces)
+                    {
+                        // Edges first, then fills over them, so overlapping pieces merge without seams.
+                        var painted = scene.Surfaces.Where(b => b.Layer == layer)
+                            .Select(b => (Bucket: b, Paint: MapPainter.Surface(b, pc))).Where(x => x.Paint != null).ToList();
+                        foreach (var (b, paint) in painted)
+                            if (paint!.Value.Outline is { } s) ctx.DrawGeometry(null, Pen(s), SurfaceGeometry(b));
+                        foreach (var (b, paint) in painted)
+                            ctx.DrawGeometry(Brush(paint!.Value.Fill), null, SurfaceGeometry(b));
+                    }
+                    foreach (var (bucket, stroke) in MapPainter.LineLayer(scene.Lines.Where(b => b.Layer == layer), pc, surfaces ? scene.SurfaceCategories : null))
                         ctx.DrawGeometry(null, Pen(stroke), LineGeometry(bucket));
                 }
                 DrawHighlights(ctx, o, pc);
@@ -92,6 +103,36 @@ public static class MapRenderer
 
     private static StreamGeometry AreaGeometry(AreaBucket b) =>
         b.Cache as StreamGeometry ?? (StreamGeometry)(b.Cache = BuildGeometry(b.Features, true));
+
+    private static StreamGeometry SurfaceGeometry(SurfaceBucket b)
+    {
+        if (b.Cache is StreamGeometry cached) return cached;
+        // Pieces overlap at junctions, so fill by winding with every outline turning the same way
+        // (holes the other way); even-odd would punch the overlaps out.
+        var geo = new StreamGeometry();
+        using (var ctx = geo.Open())
+        {
+            ctx.SetFillRule(FillRule.NonZero);
+            foreach (var f in b.Features)
+                for (int r = 0; r < f.Parts.Count; r++)
+                {
+                    var p = f.Parts[r];
+                    if (p.Length < 6) continue;
+                    bool hole = r >= f.Parts.Count - f.HoleCount;
+                    bool reverse = (MapFeature.SignedArea(p) < 0) != hole;
+                    int n = p.Length / 2;
+                    for (int k = 0; k < n; k++)
+                    {
+                        int i = (reverse ? n - 1 - k : k) * 2;
+                        if (k == 0) ctx.BeginFigure(new Point(p[i], -p[i + 1]), true);
+                        else ctx.LineTo(new Point(p[i], -p[i + 1]));
+                    }
+                    ctx.EndFigure(true);
+                }
+        }
+        b.Cache = geo;
+        return geo;
+    }
 
     private static StreamGeometry LineGeometry(LineBucket b) =>
         b.Cache as StreamGeometry ?? (StreamGeometry)(b.Cache = BuildGeometry(b.Features, false));
@@ -193,6 +234,15 @@ public static class MapRenderer
                     break;
                 case Category.Place:
                     break; // label only
+                case Category.Poi when theme.TypeColours && f.Colour is { } typeColour:
+                    if (zoom < 0.2 || paint.Fill == 0) continue;
+                    DrawPoiBadge(ctx, p, typeColour, zoom >= 0.5 ? f.Icon : null, k, theme);
+                    break;
+                case Category.OtherPoint:
+                    // Pylons, poles and traffic lights: small and only close up, so they don't clutter the map.
+                    if (zoom < 0.5 || paint.Fill == 0) continue;
+                    ctx.DrawEllipse(Brush(paint.Fill), null, p, 2 * k, 2 * k);
+                    break;
                 default:
                     if (zoom < 0.2 || paint.Fill == 0) continue;
                     ctx.DrawEllipse(Brush(paint.Fill), new Pen(Brush(theme.IsDark ? theme.Background : 0xFFFFFFFF), k), p, 3.5 * k, 3.5 * k);
@@ -200,6 +250,34 @@ public static class MapRenderer
             }
             if (f == o.Selected || f == o.Hovered || o.SelectedGroup?.Contains(f) == true)
                 ctx.DrawEllipse(null, new Pen(Brush(f == o.Hovered && f != o.Selected ? HoverColour : SelectColour), 3 * k), p, 8 * k, 8 * k);
+        }
+    }
+
+    /// <summary>A round marker in the type's colour; close up it carries the type's icon in white.</summary>
+    private static void DrawPoiBadge(DrawingContext ctx, Point p, uint colour, string? icon, double k, MapTheme theme)
+    {
+        var rim = new Pen(Brush(theme.IsDark ? 0xFF1A1D22 : 0xFFFFFFFF), 1.2 * k);
+        if (icon is null || IconGeometry(icon) is not { } glyph)
+        {
+            ctx.DrawEllipse(Brush(colour), rim, p, 4 * k, 4 * k);
+            return;
+        }
+        double r = 8 * k, size = 10 * k, s = size / 24;
+        ctx.DrawEllipse(Brush(colour), rim, p, r, r);
+        using (ctx.PushTransform(Matrix.CreateScale(s, s) * Matrix.CreateTranslation(p.X - size / 2, p.Y - size / 2)))
+            ctx.DrawGeometry(null, new Pen(Brushes.White, 2.4, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round), glyph);
+    }
+
+    private static readonly Dictionary<string, Geometry?> Icons = new();
+
+    /// <summary>Icons come from the app's Lucide set (Icons.axaml), looked up once by name.</summary>
+    private static Geometry? IconGeometry(string name)
+    {
+        lock (Icons)
+        {
+            if (!Icons.TryGetValue(name, out var g))
+                Icons[name] = g = Application.Current?.TryGetResource("Icon." + name, null, out var v) == true ? v as Geometry : null;
+            return g;
         }
     }
 
@@ -220,7 +298,7 @@ public static class MapRenderer
         }
 
         // Place names first: they matter most at every zoom level.
-        foreach (var f in scene.Points.Where(f => f.Category == Category.Place && f.Name != null && o.IsVisible(f.Category)))
+        foreach (var f in scene.PlaceLabels.Where(f => o.IsVisible(f.Category)))
         {
             var p = vp.ToScreen(f.Parts[0][0], f.Parts[0][1]);
             var ft = Text(f.Name!.ToUpperInvariant(), 13 * t, theme.PlaceText, Bold);
@@ -230,7 +308,7 @@ public static class MapRenderer
 
         if (zoom > 0.25)
         {
-            foreach (var f in scene.Points.Where(f => f.Category == Category.TransitStop && f.Name != null && o.IsVisible(f.Category)))
+            foreach (var f in scene.StopLabels.Where(f => o.IsVisible(f.Category)))
             {
                 var p = vp.ToScreen(f.Parts[0][0], f.Parts[0][1]);
                 var ft = Text(f.Name!, 11 * t, theme.StopText, Regular);
@@ -253,11 +331,10 @@ public static class MapRenderer
 
         if (zoom > 1.2)
         {
-            foreach (var f in scene.Points.Where(f => f.Category == Category.Poi && o.IsVisible(f.Category)))
+            foreach (var f in scene.PoiLabels.Where(f => o.IsVisible(f.Category)))
             {
                 if (theme.PaintOf(f.Category).Fill == 0) continue;
-                var label = f.Name ?? MapPainter.PoiLabel(f);
-                if (label is null) continue;
+                var label = f.Name ?? MapPainter.PoiLabel(f)!;
                 var p = vp.ToScreen(f.Parts[0][0], f.Parts[0][1]);
                 var ft = Text(label, 10 * t, theme.PoiText, Regular);
                 var r = new Rect(p.X + 6 * k, p.Y - ft.Height / 2, ft.Width, ft.Height);
@@ -268,17 +345,25 @@ public static class MapRenderer
 
     private static void DrawLineLabel(DrawingContext ctx, Viewport vp, MapFeature f, FormattedText ft, IBrush halo, double haloWidth, double padding, Func<Rect, bool> tryReserve)
     {
-        // Label the longest on-screen segment, rotated to follow it and kept upright.
+        // Label the longest nearly straight on-screen run, rotated to follow it and kept upright.
+        // Roads are stored as many short segments (curves are subdivided), so a single segment is
+        // rarely long enough; a run ends when the direction turns more than ~15° from where it began.
+        const double MaxTurn = 0.26;
         double bestLen = 0;
         Point a = default, b = default;
         foreach (var part in f.Parts)
         {
+            Point runStart = vp.ToScreen(part[0], part[1]);
+            double runAngle = double.NaN;
             for (int i = 2; i < part.Length; i += 2)
             {
                 var p0 = vp.ToScreen(part[i - 2], part[i - 1]);
                 var p1 = vp.ToScreen(part[i], part[i + 1]);
-                double len = Math.Sqrt((p1.X - p0.X) * (p1.X - p0.X) + (p1.Y - p0.Y) * (p1.Y - p0.Y));
-                if (len > bestLen) { bestLen = len; a = p0; b = p1; }
+                double heading = Math.Atan2(p1.Y - p0.Y, p1.X - p0.X);
+                double turn = Math.Abs(Math.IEEERemainder(heading - runAngle, 2 * Math.PI));
+                if (double.IsNaN(runAngle) || turn > MaxTurn) { runStart = p0; runAngle = heading; }
+                double len = Math.Sqrt((p1.X - runStart.X) * (p1.X - runStart.X) + (p1.Y - runStart.Y) * (p1.Y - runStart.Y));
+                if (len > bestLen) { bestLen = len; a = runStart; b = p1; }
             }
         }
         if (bestLen < ft.Width + padding) return;

@@ -44,10 +44,10 @@ public partial class App : Application
             var window = new MainWindow();
             desktop.MainWindow = window;
 
-            string? file = args.FirstOrDefault(a => !a.StartsWith("--") && File.Exists(a));
+            string? file = args.FirstOrDefault(a => !a.StartsWith("--") && (File.Exists(a) || Directory.Exists(a)));
             bool scripted = args.Any(a => a.StartsWith("--"));
             if (file is null && !scripted && state.Settings.OpenLastFile)
-                file = state.Settings.RecentFiles.FirstOrDefault(File.Exists);
+                file = state.Settings.RecentFiles.FirstOrDefault(p => File.Exists(p) || Directory.Exists(p));
             string? shot = ArgValue(args, "--screenshot");
             string? select = ArgValue(args, "--select");
             bool poster = args.Contains("--poster");

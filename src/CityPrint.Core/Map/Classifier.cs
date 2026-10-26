@@ -16,7 +16,9 @@ public static class Classifier
         if (t.ContainsKey("place")) return Category.Place;
         if (n.Is("natural", "tree")) return Category.Tree;
         if (t.ContainsKey("amenity") || t.ContainsKey("shop") || t.ContainsKey("office") || t.ContainsKey("tourism")
-            || t.ContainsKey("leisure") || t.ContainsKey("historic") || t.ContainsKey("power") || t.ContainsKey("aeroway"))
+            || t.ContainsKey("leisure") || t.ContainsKey("historic") || t.ContainsKey("aeroway")
+            || (t.TryGetValue("power", out var pw) && pw is not ("tower" or "pole"))
+            || (t.TryGetValue("man_made", out var mm) && n.Has("name") && mm is not "works"))
             return Category.Poi;
         return Category.OtherPoint;
     }
@@ -31,22 +33,7 @@ public static class Classifier
         if (t.TryGetValue("highway", out var hw))
         {
             if (hw == "pedestrian" && (e.Is("area", "yes") || IsClosed(e))) return null;
-            return hw switch
-            {
-                "motorway" => Category.Motorway,
-                "motorway_link" => Category.MotorwayLink,
-                "trunk" => Category.Trunk,
-                "trunk_link" => Category.TrunkLink,
-                "primary" or "primary_link" => Category.Primary,
-                "secondary" or "secondary_link" => Category.Secondary,
-                "tertiary" or "tertiary_link" => Category.Tertiary,
-                "residential" or "unclassified" or "living_street" or "road" => Category.Street,
-                "service" => Category.Service,
-                "footway" or "path" or "steps" or "pedestrian" or "sidewalk" or "track" or "bridleway" => Category.Footway,
-                "cycleway" => Category.Cycleway,
-                "platform" => Category.Platform,
-                _ => Category.OtherLine,
-            };
+            return Highway(hw);
         }
         if (t.TryGetValue("railway", out var rw))
         {
@@ -79,6 +66,8 @@ public static class Classifier
             return Category.Water;
         if (e.Is("landuse", "forest") || e.Is("natural", "wood")) return Category.Forest;
         if (t.ContainsKey("building")) return Category.Building;
+        if (t.ContainsKey("zoning")) return Category.Zoning;
+        if (e.Is("boundary", "administrative")) return Category.District;
         if (e.Is("highway", "pedestrian")) return Category.Pedestrian;
 
         if (t.TryGetValue("landuse", out var lu))
@@ -103,6 +92,30 @@ public static class Classifier
             return Category.OtherLanduse;
         return null;
     }
+
+    /// <summary>
+    /// Road surfaces (<c>area:highway=*</c>, written by the Carto importer from its road outlines)
+    /// take their road's category but are drawn as areas at real width.
+    /// </summary>
+    public static Category? ClassifySurface(OsmElement e) =>
+        e.Tag("area:highway") is { } hw && Highway(hw) is var c && MapStyle.IsRoad(c) ? c : null;
+
+    private static Category Highway(string hw) => hw switch
+    {
+        "motorway" => Category.Motorway,
+        "motorway_link" => Category.MotorwayLink,
+        "trunk" => Category.Trunk,
+        "trunk_link" => Category.TrunkLink,
+        "primary" or "primary_link" => Category.Primary,
+        "secondary" or "secondary_link" => Category.Secondary,
+        "tertiary" or "tertiary_link" => Category.Tertiary,
+        "residential" or "unclassified" or "living_street" or "road" => Category.Street,
+        "service" => Category.Service,
+        "footway" or "path" or "steps" or "pedestrian" or "sidewalk" or "track" or "bridleway" => Category.Footway,
+        "cycleway" => Category.Cycleway,
+        "platform" => Category.Platform,
+        _ => Category.OtherLine,
+    };
 
     private static bool IsClosed(OsmElement e) => e is OsmWay w && w.IsClosed;
 }

@@ -4,6 +4,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CityPrint.App.Services;
+using CityPrint.Core.Carto;
 using CityPrint.Core.Map;
 using CityPrint.Core.Osm;
 
@@ -67,6 +68,9 @@ public sealed partial class AppState : ObservableObject
         return Path.Combine([home, "AppData", "LocalLow", .. tail]);
     }
 
+    /// <summary>The Carto mod exports next to the OSM Export mod, under ModsDataCarto.</summary>
+    public static string CartoExportFolder { get; } = Path.Combine(Path.GetDirectoryName(GameExportFolder)!, "Carto");
+
     public AppSettings Settings { get; }
 
     private readonly bool[] _visible = Enumerable.Repeat(true, Enum.GetValues<Category>().Length).ToArray();
@@ -82,6 +86,7 @@ public sealed partial class AppState : ObservableObject
         _showMapBounds = Settings.ShowMapBounds;
         _showTileGrid = Settings.ShowTileGrid;
         _autoReload = Settings.AutoReload;
+        _showInferred = Settings.ShowInferred;
 
         string? group = null;
         foreach (var s in MapStyle.All.OrderBy(s => GroupOrder(s.Group)).ThenBy(s => s.Order))
@@ -97,10 +102,14 @@ public sealed partial class AppState : ObservableObject
             item.VisibilityChanged += () =>
             {
                 _visible[(int)item.Category] = item.IsVisible;
+                LayerToggled(item);
                 RenderInvalidated?.Invoke();
             };
             Layers.Add(item);
         }
+        ApplyInferred();
+        SetLayer(Category.Zoning, Settings.ZoningVisible);
+        SetLayer(Category.District, Settings.DistrictsVisible);
         UpdateSwatches();
         RefreshRecent();
     }
@@ -150,7 +159,7 @@ public sealed partial class AppState : ObservableObject
         {
             var (model, scene, stats) = await Task.Run(() =>
             {
-                var m = MapModel.Build(OsmDocument.Load(path));
+                var m = MapModel.Build(CartoImporter.IsCartoExport(path) ? CartoImporter.Load(path) : OsmDocument.Load(path));
                 return (m, MapScene.Build(m), MapStats.Compute(m));
             });
 
@@ -234,13 +243,17 @@ public sealed partial class AppState : ObservableObject
 
     private void Watch(string path)
     {
-        var dir = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        var name = Path.GetFileName(path);
+        // A Carto export is a folder of layers plus rasters; any of them changing means a new export.
+        bool carto = Directory.Exists(path) || CartoImporter.IsCartoExport(path);
+        var dir = Directory.Exists(path) ? Path.GetFullPath(path) : Path.GetDirectoryName(Path.GetFullPath(path))!;
+        var name = carto ? "*" : Path.GetFileName(path);
+        if (carto && Directory.Exists(Path.Combine(dir, "..", "GeoTIFF"))) dir = Path.GetFullPath(Path.Combine(dir, ".."));
         if (_watcher?.Path == dir && _watcher.Filter == name) return;
         _watcher?.Dispose();
         _watcher = new FileSystemWatcher(dir, name)
         {
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
+            IncludeSubdirectories = carto,
             EnableRaisingEvents = AutoReload,
         };
         _watcher.Changed += (_, _) => ScheduleReload();
@@ -357,6 +370,13 @@ public sealed partial class AppState : ObservableObject
         if (value.Lanes > 0) Info("Lanes", value.Lanes.ToString(CultureInfo.InvariantCulture));
         if (value.Layer != 0 || value.IsBridge || value.IsTunnel)
             Info("Layer", $"{value.Layer}{(value.IsBridge ? " · bridge" : "")}{(value.IsTunnel ? " · tunnel" : "")}");
+        if (e.Tag("addr:street") is { } street)
+            Info("Address", string.Join(", ", new[] { $"{e.Tag("addr:housenumber")} {street}".Trim(), e.Tag("addr:district") }.OfType<string>()));
+        if (e.Tag("residents") is { } residents) Info("Residents", residents);
+        if (e.Tag("employees") is { } employees) Info("Employees", employees);
+        if ((e.Tag("carto:zoning") ?? e.Tag("zoning")) is { } zoning) Info("Zoning", zoning);
+        if (e.Tag("population") is { } population) Info("Population", population);
+        if (e.Tag("cityprint:inferred") != null) Info("Source", "Inferred by City Print, not in the export");
         if (Model != null && value.Name != null && value.Kind == GeometryKind.Line)
         {
             string section = FeatureGroups.SectionOf(value.Category);
@@ -456,6 +476,7 @@ public sealed partial class AppState : ObservableObject
     [ObservableProperty] private bool _showLabels = true;
     [ObservableProperty] private bool _showMapBounds = true;
     [ObservableProperty] private bool _realWidths = true;
+    [ObservableProperty] private bool _showInferred = true;
     [ObservableProperty] private MapTheme _mapTheme = MapThemes.Classic;
 
     public IReadOnlyList<MapTheme> MapThemeList => MapThemes.All;
@@ -464,6 +485,44 @@ public sealed partial class AppState : ObservableObject
     partial void OnShowLabelsChanged(bool value) { Settings.ShowLabels = value; ViewOptionChanged(); }
     partial void OnShowMapBoundsChanged(bool value) { Settings.ShowMapBounds = value; ViewOptionChanged(); }
     partial void OnRealWidthsChanged(bool value) { Settings.RealWidths = value; ViewOptionChanged(); }
+
+    partial void OnShowInferredChanged(bool value)
+    {
+        Settings.ShowInferred = value;
+        ApplyInferred();
+        Settings.Save();
+    }
+
+    /// <summary>Toolbar shortcuts for single layers; they and the Layers panel checkboxes drive each other.</summary>
+    public bool ShowZoning { get => IsVisible(Category.Zoning); set => SetLayer(Category.Zoning, value); }
+    public bool ShowDistricts { get => IsVisible(Category.District); set => SetLayer(Category.District, value); }
+
+    private void SetLayer(Category c, bool visible)
+    {
+        if (Layers.FirstOrDefault(l => l.Category == c) is { } item) item.IsVisible = visible;
+    }
+
+    private void LayerToggled(LayerItem item)
+    {
+        if (item.Category == Category.Zoning)
+        {
+            Settings.ZoningVisible = item.IsVisible;
+            OnPropertyChanged(nameof(ShowZoning));
+        }
+        else if (item.Category == Category.District)
+        {
+            Settings.DistrictsVisible = item.IsVisible;
+            OnPropertyChanged(nameof(ShowDistricts));
+        }
+        else return;
+        Settings.Save();
+    }
+
+    /// <summary>Guessed parks and shopping streets are layers of their own; the toggle shows or hides them together.</summary>
+    private void ApplyInferred()
+    {
+        foreach (var l in Layers.Where(l => l.Group == "Inferred")) l.IsVisible = ShowInferred;
+    }
 
     partial void OnMapThemeChanged(MapTheme value)
     {
@@ -482,6 +541,9 @@ public sealed partial class AppState : ObservableObject
         MapTheme = MapThemes.ById(d.MapTheme);
         ShowLabels = d.ShowLabels;
         RealWidths = d.RealWidths;
+        ShowInferred = d.ShowInferred;
+        ShowZoning = d.ZoningVisible;
+        ShowDistricts = d.DistrictsVisible;
         ShowMapBounds = d.ShowMapBounds;
         ShowTileGrid = d.ShowTileGrid;
         AutoReload = d.AutoReload;

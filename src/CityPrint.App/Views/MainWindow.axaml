@@ -31,6 +31,9 @@
             <MenuItem Header="Open _game export" InputGesture="Ctrl+G" Click="OnOpenGameExport">
               <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Download}" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Open _Carto export" InputGesture="Ctrl+Shift+G" Click="OnOpenCartoExport">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Download}" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem x:Name="RecentMenu" Header="Open _recent">
               <MenuItem.Icon><c:Icon Data="{StaticResource Icon.RotateCcwClock}" /></MenuItem.Icon>
             </MenuItem>
@@ -68,6 +71,9 @@
             <Separator />
             <MenuItem Header="Labels" ToggleType="CheckBox" IsChecked="{Binding ShowLabels}" />
             <MenuItem Header="Real road widths" ToggleType="CheckBox" IsChecked="{Binding RealWidths}" />
+            <MenuItem Header="Zoning" ToggleType="CheckBox" IsChecked="{Binding ShowZoning}" />
+            <MenuItem Header="Districts" ToggleType="CheckBox" IsChecked="{Binding ShowDistricts}" />
+            <MenuItem Header="Inferred parks &amp; shopping streets" ToggleType="CheckBox" IsChecked="{Binding ShowInferred}" />
             <MenuItem Header="Map edge (14.3 km)" ToggleType="CheckBox" IsChecked="{Binding ShowMapBounds}" />
             <MenuItem Header="Tile grid (23 × 23)" ToggleType="CheckBox" IsChecked="{Binding ShowTileGrid}" />
             <Separator />
@@ -83,6 +89,9 @@
           </MenuItem>
           <MenuItem Header="_Help">
             <MenuItem Header="Open game export folder" Click="OnOpenExportFolder">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.ExternalLink}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Open Carto export folder" Click="OnOpenCartoFolder">
               <MenuItem.Icon><c:Icon Data="{StaticResource Icon.ExternalLink}" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Open settings folder" Click="OnOpenSettingsFolder">
@@ -125,6 +134,8 @@
           <Separator Classes="vertical" />
           <ToggleButton Classes="tool" ToolTip.Tip="Labels" IsChecked="{Binding ShowLabels}"><c:Icon Data="{StaticResource Icon.Type}" /></ToggleButton>
           <ToggleButton Classes="tool" ToolTip.Tip="Real road widths" IsChecked="{Binding RealWidths}"><c:Icon Data="{StaticResource Icon.Ruler}" /></ToggleButton>
+          <ToggleButton Classes="tool" ToolTip.Tip="Zoning" IsChecked="{Binding ShowZoning}"><c:Icon Data="{StaticResource Icon.LayoutGrid}" /></ToggleButton>
+          <ToggleButton Classes="tool" ToolTip.Tip="Districts" IsChecked="{Binding ShowDistricts}"><c:Icon Data="{StaticResource Icon.Landmark}" /></ToggleButton>
           <ToggleButton Classes="tool" ToolTip.Tip="Map boundary" IsChecked="{Binding ShowMapBounds}"><c:Icon Data="{StaticResource Icon.SquareDashed}" /></ToggleButton>
           <ToggleButton Classes="tool" ToolTip.Tip="Tile grid" IsChecked="{Binding ShowTileGrid}"><c:Icon Data="{StaticResource Icon.Grid3x3}" /></ToggleButton>
           <Separator Classes="vertical" />

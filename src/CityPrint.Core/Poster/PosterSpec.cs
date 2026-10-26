@@ -4,9 +4,22 @@ namespace CityPrint.Core.Poster;
 
 public enum PosterLayoutStyle { Gallery, FullBleed, Minimal }
 
-public sealed record PaperSize(string Name, double WidthMm, double HeightMm)
+/// <param name="PixelWidth">For screen presets: the exact output size, whatever the DPI setting.</param>
+public sealed record PaperSize(string Name, double WidthMm, double HeightMm, int PixelWidth = 0, int PixelHeight = 0)
 {
     public override string ToString() => Name;
+
+    public bool IsScreen => PixelWidth > 0;
+
+    /// <summary>
+    /// A screen preset is laid out on a page whose long side matches A3, so text and margins keep the
+    /// same proportions at every resolution; the render is then scaled to the exact pixel size.
+    /// </summary>
+    private static PaperSize Screen(string name, int width, int height)
+    {
+        double k = 420.0 / Math.Max(width, height);
+        return new(name, width * k, height * k, width, height);
+    }
 
     public static IReadOnlyList<PaperSize> All { get; } =
     [
@@ -19,13 +32,19 @@ public sealed record PaperSize(string Name, double WidthMm, double HeightMm)
         new("18 × 24 in", 457.2, 609.6),
         new("24 × 36 in", 609.6, 914.4),
         new("Square 50 cm", 500, 500),
-        // Screen sizes: at 96 DPI these come out at the named pixel size.
-        new("Desktop 1920 × 1080", 508, 285.75),
-        new("Desktop 3840 × 2160", 1016, 571.5),
-        new("Phone 1170 × 2532", 309.56, 669.93),
+        Screen("Full HD 1920 × 1080 (16:9)", 1920, 1080),
+        Screen("2K QHD 2560 × 1440 (16:9)", 2560, 1440),
+        Screen("4K UHD 3840 × 2160 (16:9)", 3840, 2160),
+        Screen("Ultrawide 3440 × 1440 (21:9)", 3440, 1440),
+        Screen("Pixel 9a 1080 × 2424", 1080, 2424),
+        Screen("iPhone 1170 × 2532", 1170, 2532),
     ];
 
-    public static PaperSize ByName(string? name) => All.FirstOrDefault(p => p.Name == name) ?? All[1];
+    /// <summary>Finds a preset by name; older screen preset names are matched by their pixel size.</summary>
+    public static PaperSize ByName(string? name) =>
+        All.FirstOrDefault(p => p.Name == name)
+        ?? All.FirstOrDefault(p => p.IsScreen && name != null && name.Contains($"{p.PixelWidth} × {p.PixelHeight}"))
+        ?? All[1];
 }
 
 public readonly record struct Box(double X, double Y, double W, double H)
@@ -65,7 +84,13 @@ public sealed class PosterSpec
     public double PageWidth => (Landscape ? Math.Max(Paper.WidthMm, Paper.HeightMm) : Math.Min(Paper.WidthMm, Paper.HeightMm)) * UnitsPerMm;
     public double PageHeight => (Landscape ? Math.Min(Paper.WidthMm, Paper.HeightMm) : Math.Max(Paper.WidthMm, Paper.HeightMm)) * UnitsPerMm;
 
-    public (int Width, int Height) PixelSize => ((int)Math.Round(PageWidth * Dpi / 96), (int)Math.Round(PageHeight * Dpi / 96));
+    public (int Width, int Height) PixelSize => Paper.IsScreen
+        ? (Landscape ? (Math.Max(Paper.PixelWidth, Paper.PixelHeight), Math.Min(Paper.PixelWidth, Paper.PixelHeight))
+                     : (Math.Min(Paper.PixelWidth, Paper.PixelHeight), Math.Max(Paper.PixelWidth, Paper.PixelHeight)))
+        : ((int)Math.Round(PageWidth * Dpi / 96), (int)Math.Round(PageHeight * Dpi / 96));
+
+    /// <summary>Output pixels per page unit: DPI/96 for paper, whatever fits the exact size for screens.</summary>
+    public double RenderScale => PixelSize.Width / PageWidth;
 }
 
 /// <summary>Where each poster element goes, computed once for every renderer.</summary>

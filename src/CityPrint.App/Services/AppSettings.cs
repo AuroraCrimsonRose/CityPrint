@@ -23,6 +23,9 @@ public sealed class AppSettings
     public string MapTheme { get; set; } = "classic";
     public bool ShowLabels { get; set; } = true;
     public bool RealWidths { get; set; } = true;
+    public bool ShowInferred { get; set; } = true;
+    public bool ZoningVisible { get; set; }
+    public bool DistrictsVisible { get; set; }
     public bool ShowMapBounds { get; set; } = true;
     public bool ShowTileGrid { get; set; }
     public bool AutoReload { get; set; } = true;

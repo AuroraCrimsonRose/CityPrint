@@ -63,7 +63,8 @@
             </Grid>
             <Grid ColumnDefinitions="Auto,*" Margin="0,2,0,0">
               <TextBlock Classes="muted" Text="Resolution (DPI)" VerticalAlignment="Center" Margin="0,0,10,0" />
-              <ComboBox Grid.Column="1" ItemsSource="{Binding DpiOptions}" SelectedItem="{Binding Dpi}" HorizontalAlignment="Stretch" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding DpiOptions}" SelectedItem="{Binding Dpi}" HorizontalAlignment="Stretch"
+                        IsEnabled="{Binding !Paper.IsScreen}" ToolTip.Tip="Screen sizes always export at their exact pixel size" />
             </Grid>
 
             <TextBlock Classes="header" Text="CONTENT" />

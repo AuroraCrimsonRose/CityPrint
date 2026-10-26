@@ -78,6 +78,20 @@ public sealed class OsmDocument
         return doc;
     }
 
+    /// <summary>Builds a document from elements made by an importer (such as the Carto reader) and validates it.</summary>
+    public static OsmDocument FromElements(string path, string generator, long fileSize, TimeSpan parseTime,
+        IEnumerable<OsmNode> nodes, IEnumerable<OsmWay> ways, IEnumerable<OsmRelation> relations, IEnumerable<Diagnostic> diagnostics)
+    {
+        var doc = new OsmDocument { FilePath = path, Generator = generator, FileSize = fileSize };
+        foreach (var n in nodes) doc.Add(n);
+        foreach (var w in ways) doc.Add(w);
+        foreach (var r in relations) doc.Add(r);
+        doc.Diagnostics.AddRange(diagnostics);
+        doc.Validate();
+        doc.ParseTime = parseTime;
+        return doc;
+    }
+
     private void Add(OsmNode n)
     {
         if (Nodes.TryAdd(n.Id, n)) return;

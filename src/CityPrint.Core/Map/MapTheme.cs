@@ -30,6 +30,9 @@ public sealed class MapTheme
     /// <summary>Use the mod's per-mode colours (bus cyan, tram red…) for transport lines.</summary>
     public bool ModeColours { get; init; } = true;
 
+    /// <summary>Colour buildings and points of interest by type (homes, shops, police…).</summary>
+    public bool TypeColours { get; init; } = true;
+
     /// <summary>Multiplies stop marker size; transit-focused themes enlarge them.</summary>
     public double StopScale { get; init; } = 1;
 
@@ -38,6 +41,8 @@ public sealed class MapTheme
     public Paint PaintOf(Category c)
     {
         if (Overrides.TryGetValue(c, out var p)) return p;
+        // Inferred parks look like real ones unless a theme says otherwise.
+        if (c == Category.InferredPark) return PaintOf(Category.Park);
         var s = MapStyle.Of(c);
         return new Paint(s.Fill, s.Stroke, s.Casing);
     }
@@ -131,6 +136,7 @@ public static class MapThemes
         Frame = 0xC0BFD7F0,
         Grid = 0x30FFFFFF,
         ModeColours = false,
+        TypeColours = false,
         Overrides = BlueprintPaints(),
     };
 
@@ -151,6 +157,7 @@ public static class MapThemes
         Grid = 0x202A2A2A,
         AreaOutlines = false,
         ModeColours = false,
+        TypeColours = false,
         Overrides = PosterPaints(ink: 0xFF2A2A2A, water: 0xFF9DB9C4, park: 0xFFDCE3CC, building: 0xFFE2D9CB, accent: 0xFF2A2A2A, rail: 0xFF5A5A5A, ferry: 0xFF7A9AAA),
     };
 
@@ -172,6 +179,7 @@ public static class MapThemes
         Grid = 0x18FFFFFF,
         AreaOutlines = false,
         ModeColours = false,
+        TypeColours = false,
         Overrides = PosterPaints(ink: 0xFFE8E6E1, water: 0xFF1D2430, park: 0xFF141A14, building: 0xFF1A1A1D, accent: 0xFFF2C14E, rail: 0xFF8A8A8A, ferry: 0xFF3A4A5E),
     };
 
@@ -200,6 +208,8 @@ public static class MapThemes
             [Category.Industrial] = new(0xFFE6E6E3, 0, 0),
             [Category.Office] = new(0xFFE6E6E3, 0, 0),
             [Category.OtherLanduse] = new(0xFFE6E6E3, 0, 0),
+            [Category.Zoning] = new(0, 0, 0),
+            [Category.ShoppingStreet] = new(0, 0, 0),
             [Category.Pedestrian] = new(0xFFEDEDEA, 0, 0),
             [Category.Building] = new(0xFFDDDDDA, 0, 0),
             [Category.Contour] = new(0, 0, 0),
@@ -246,6 +256,8 @@ public static class MapThemes
                 _ => new(0, line, 0, 1, Dashed: s.Dash != null ? true : null),
             };
         }
+        d.Remove(Category.InferredPark);
+        d[Category.Zoning] = new(0, 0, 0);
         d[Category.Water] = new(0xFF0B2F55, 0xA06FA0D0, 0);
         d[Category.Building] = new(0x209CC2E8, 0xFF9CC2E8, 0);
         d[Category.Motorway] = new(0, bright, 0, 1.1);
@@ -270,6 +282,7 @@ public static class MapThemes
                 _ => MapStyle.IsRoad(s.Category) ? new(0, ink, 0, 0.8) : new(0, 0, 0),
             };
         }
+        d.Remove(Category.InferredPark);
         d[Category.Water] = new(water, 0, 0);
         d[Category.Park] = new(park, 0, 0);
         d[Category.Forest] = new(park, 0, 0);

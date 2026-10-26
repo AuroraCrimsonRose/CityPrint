@@ -4,7 +4,7 @@ namespace CityPrint.Core.Map;
 
 public sealed class MapFeature
 {
-    public required int Index { get; init; }
+    public int Index { get; internal set; }
     public required OsmElement Element { get; init; }
     public required Category Category { get; init; }
     public required GeometryKind Kind { get; init; }
@@ -28,6 +28,12 @@ public sealed class MapFeature
     public int Lanes { get; init; }
     public double WidthMetres { get; init; }
     public uint? Colour { get; init; }
+
+    /// <summary>For points of interest: the icon drawn on the marker (a name from the app's icon set).</summary>
+    public string? Icon { get; init; }
+
+    /// <summary>A road's real outline (an area in a road category), drawn instead of its centreline when zoomed in.</summary>
+    public bool IsSurface { get; init; }
 
     public double LengthMetres { get; private set; }
     public double AreaSqMetres { get; private set; }
@@ -65,14 +71,15 @@ public sealed class MapFeature
         {
             for (int r = 0; r < Parts.Count; r++)
             {
-                double a = Math.Abs(RingArea(Parts[r]));
+                double a = Math.Abs(SignedArea(Parts[r]));
                 area += HoleCount > 0 && r >= Parts.Count - HoleCount ? -a : a;
             }
             AreaSqMetres = Math.Max(0, area);
         }
     }
 
-    private static double RingArea(double[] p)
+    /// <summary>Signed area of a closed ring in metres² (positive when counter-clockwise with y pointing north).</summary>
+    public static double SignedArea(double[] p)
     {
         double s = 0;
         for (int i = 2; i < p.Length; i += 2) s += p[i - 2] * p[i + 1] - p[i] * p[i - 1];

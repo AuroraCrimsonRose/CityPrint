@@ -153,7 +153,7 @@ public sealed class MapView : Control
 
         if (_state.Model is null)
         {
-            var ft = MapRenderer.Text("Drop an .osm export here or use File ▸ Open", 15, theme.IsDark ? 0xFF8A919Cu : 0xFF7A7A7Au);
+            var ft = MapRenderer.Text("Drop an .osm file or Carto export here, or use File ▸ Open", 15, theme.IsDark ? 0xFF8A919Cu : 0xFF7A7A7Au);
             ctx.DrawText(ft, new Point((W - ft.Width) / 2, (H - ft.Height) / 2));
         }
     }

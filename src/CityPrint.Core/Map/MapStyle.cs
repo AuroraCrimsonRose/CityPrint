@@ -5,9 +5,9 @@ public enum GeometryKind { Point, Line, Area }
 public enum Category
 {
     // areas
-    Water, Farmland, Forest, Park, Residential, Commercial, Retail, Industrial, Office, OtherLanduse, Pedestrian, Building,
+    Water, Farmland, Forest, Park, InferredPark, Residential, Commercial, Retail, Industrial, Office, OtherLanduse, Zoning, Pedestrian, Building, District,
     // lines
-    Contour, Footway, Cycleway, Service, Street, Tertiary, Secondary, Primary, TrunkLink, Trunk, MotorwayLink, Motorway,
+    Contour, ShoppingStreet, Footway, Cycleway, Service, Street, Tertiary, Secondary, Primary, TrunkLink, Trunk, MotorwayLink, Motorway,
     Rail, Tram, Subway, LightRail, Platform, Power, Ferry, Runway, Taxiway, TransitLine, Waterway, OtherLine,
     // points
     TransitStop, Place, Poi, Tree, OtherPoint,
@@ -42,17 +42,22 @@ public static class MapStyle
         new(Category.Farmland, "Farmland", "Land use", GeometryKind.Area, 0xFFE9D8BE, Order: 1),
         new(Category.Forest, "Forest", "Nature", GeometryKind.Area, 0xFF8DC56C, Order: 2),
         new(Category.Park, "Parks & leisure", "Land use", GeometryKind.Area, 0xFFC0F6B0, Order: 3),
+        new(Category.InferredPark, "Inferred parks", "Inferred", GeometryKind.Area, 0xFFC0F6B0, Order: 3),
         new(Category.Residential, "Residential", "Land use", GeometryKind.Area, 0xFFDCDCDC, 0xFFC4C4C4, Order: 4),
         new(Category.Commercial, "Commercial", "Land use", GeometryKind.Area, 0xFFEFC8C8, 0xFFD9AFAF, Order: 5),
         new(Category.Retail, "Retail", "Land use", GeometryKind.Area, 0xFFF0D9D9, 0xFFF4A19E, Order: 6),
         new(Category.Industrial, "Industrial", "Land use", GeometryKind.Area, 0xFFDFD1D6, 0xFFC5B5BB, Order: 7),
         new(Category.Office, "Office", "Land use", GeometryKind.Area, 0xFF95ACDF, 0xFF7D93C4, Order: 8),
         new(Category.OtherLanduse, "Other land use", "Land use", GeometryKind.Area, 0xFFE4E0D8, 0xFFCCC8C0, Order: 9),
+        // Zoning cells carry the game's zone colour; the fill's alpha is how strongly it is shown.
+        new(Category.Zoning, "Zoning", "Land use", GeometryKind.Area, 0x50000000, Order: 9),
         new(Category.Pedestrian, "Pedestrian areas", "Land use", GeometryKind.Area, 0xFFEDEDED, 0xFFB1B1B1, Order: 10),
         new(Category.Building, "Buildings", "Land use", GeometryKind.Area, 0xFFBCA9A9, 0xFF8E7C7C, Order: 11),
+        new(Category.District, "Districts", "Places", GeometryKind.Area, 0, 0xB0806090, MinPixels: 1.5, Dash: [4, 3], Order: 12),
 
         new(Category.Contour, "Contours", "Nature", GeometryKind.Line, 0, 0x60A08060, MinPixels: 0.75, Order: 20),
         new(Category.Waterway, "Waterways", "Nature", GeometryKind.Line, 0, 0xFFB5D0D0, WidthMetres: 8, MinPixels: 1.5, Order: 21),
+        new(Category.ShoppingStreet, "Shopping streets", "Inferred", GeometryKind.Line, 0, 0x70F4A19E, WidthMetres: 22, MinPixels: 5, Order: 29),
         new(Category.Footway, "Footways & paths", "Roads", GeometryKind.Line, 0, 0xFFFA8072, WidthMetres: 3, MinPixels: 1, Dash: [2, 1.5], Order: 30),
         new(Category.Cycleway, "Cycleways", "Roads", GeometryKind.Line, 0, 0xFF4040FF, WidthMetres: 3, MinPixels: 1, Dash: [2, 1.5], Order: 31),
         new(Category.Service, "Service roads", "Roads", GeometryKind.Line, 0, 0xFFFFFFFF, 0xFFBBBBBB, WidthMetres: 6, MinPixels: 1, Order: 32),

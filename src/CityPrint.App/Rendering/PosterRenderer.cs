@@ -142,13 +142,13 @@ public static class PosterRenderer
         }
     }
 
-    /// <summary>Renders the poster to a PNG at the spec's DPI.</summary>
+    /// <summary>Renders the poster to a PNG at the spec's DPI, or a screen preset's exact size.</summary>
     public static void SavePng(string path, PosterSpec spec, MapScene? scene, Func<Category, bool> isVisible, IReadOnlyList<LegendEntry> legend)
     {
         var (w, h) = spec.PixelSize;
         using var bmp = new RenderTargetBitmap(new PixelSize(w, h), new Vector(96, 96));
         using (var ctx = bmp.CreateDrawingContext())
-        using (ctx.PushTransform(Matrix.CreateScale(spec.Dpi / 96.0, spec.Dpi / 96.0)))
+        using (ctx.PushTransform(Matrix.CreateScale(spec.RenderScale, spec.RenderScale)))
             Render(ctx, spec, scene, isVisible, legend);
         bmp.Save(path, PngBitmapEncoderOptions.Default);
     }

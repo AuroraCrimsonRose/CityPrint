@@ -69,7 +69,7 @@ public static class SvgExporter
         {
             if (MapPainter.Area(b, pc) is not { } paint) continue;
             w.WriteStartElement("path");
-            w.WriteAttributeString("id", "area-" + b.Category.ToString().ToLowerInvariant());
+            w.WriteAttributeString("id", "area-" + b.Category.ToString().ToLowerInvariant() + (b.Colour != 0 ? "-" + Colour(b.Colour)[1..] : ""));
             w.WriteAttributeString("fill-rule", "evenodd");
             w.WriteAttributeString("fill", paint.Fill != 0 ? Colour(paint.Fill) : "none");
             if (Opacity(paint.Fill) is { } fo) w.WriteAttributeString("fill-opacity", fo);
@@ -79,13 +79,38 @@ public static class SvgExporter
         }
         w.WriteEndElement();
 
+        bool surfaces = MapPainter.UseSurfaces(scene, pc);
         foreach (int layer in scene.Layers)
         {
             w.WriteStartElement("g");
             w.WriteAttributeString("id", $"lines-layer{layer}");
             if (layer < 0) w.WriteAttributeString("opacity", "0.45");
+            if (surfaces)
+            {
+                // Road outlines: edges under fills so overlapping pieces merge, as on screen.
+                var painted = scene.Surfaces.Where(b => b.Layer == layer)
+                    .Select(b => (Bucket: b, Paint: MapPainter.Surface(b, pc), Data: PathData(b.Features, closed: true, oriented: true)))
+                    .Where(x => x.Paint != null).ToList();
+                foreach (var (b, paint, d) in painted.Where(x => x.Paint!.Value.Outline != null))
+                {
+                    w.WriteStartElement("path");
+                    w.WriteAttributeString("fill", "none");
+                    StrokeAttributes(w, paint!.Value.Outline!.Value);
+                    w.WriteAttributeString("d", d);
+                    w.WriteEndElement();
+                }
+                foreach (var (b, paint, d) in painted)
+                {
+                    w.WriteStartElement("path");
+                    w.WriteAttributeString("data-category", b.Category + " surface");
+                    w.WriteAttributeString("fill", Colour(paint!.Value.Fill));
+                    if (Opacity(paint.Value.Fill) is { } so) w.WriteAttributeString("fill-opacity", so);
+                    w.WriteAttributeString("d", d);
+                    w.WriteEndElement();
+                }
+            }
             var data = new Dictionary<LineBucket, string>();
-            foreach (var (bucket, stroke) in MapPainter.LineLayer(scene.Lines.Where(b => b.Layer == layer), pc))
+            foreach (var (bucket, stroke) in MapPainter.LineLayer(scene.Lines.Where(b => b.Layer == layer), pc, surfaces ? scene.SurfaceCategories : null))
             {
                 if (!data.TryGetValue(bucket, out var d)) data[bucket] = d = PathData(bucket.Features, closed: false);
                 w.WriteStartElement("path");
@@ -162,26 +187,56 @@ public static class SvgExporter
 
         bool Inside(double x, double y) => x >= map.X && y >= map.Y && x <= map.Right && y <= map.Bottom;
 
-        foreach (var f in scene.Points.Where(f => f.Category == Category.Place && f.Name != null && isVisible(f.Category)))
+        // Labels are placed in rank order and skipped when they would overlap one already placed.
+        // Text widths are estimated, since the SVG viewer picks the final font.
+        var occupied = new List<Box>();
+        bool TryReserve(Box b)
+        {
+            foreach (var o in occupied)
+                if (b.X < o.Right && o.X < b.Right && b.Y < o.Bottom && o.Y < b.Bottom) return false;
+            occupied.Add(new Box(b.X - 1.5 * k, b.Y - 1.5 * k, b.W + 3 * k, b.H + 3 * k));
+            return true;
+        }
+        static double TextWidth(string s, double size, bool bold) => s.Length * size * (bold ? 0.66 : 0.58);
+
+        foreach (var f in scene.PlaceLabels.Where(f => isVisible(f.Category)))
         {
             var (x, y) = toPage(f.Parts[0][0], f.Parts[0][1]);
             if (!Inside(x, y)) continue;
-            Text(w, f.Name!.ToUpperInvariant(), x, y, 13 * k, theme.PlaceText, "700", "middle", 3 * k);
+            string name = f.Name!.ToUpperInvariant();
+            double size = 13 * k, tw = TextWidth(name, size, true);
+            if (!TryReserve(new Box(x - tw / 2, y - size / 2, tw, size))) continue;
+            Text(w, name, x, y, size, theme.PlaceText, "700", "middle", 3 * k);
+        }
+
+        var stops = new List<(string Name, double X, double Y, double Size)>();
+        foreach (var f in scene.StopLabels.Where(f => isVisible(f.Category)))
+        {
+            var (x, y) = toPage(f.Parts[0][0], f.Parts[0][1]);
+            if (!Inside(x, y)) continue;
+            double size = 9 * k, lx = x + 6 * theme.StopScale;
+            if (TryReserve(new Box(lx, y - size / 2, TextWidth(f.Name!, size, false), size))) stops.Add((f.Name!, lx, y, size));
         }
 
         // One label per street, on its longest piece, following the line.
         int id = 0;
         w.WriteStartElement("defs");
         var paths = new List<(string Id, string Name, double Size)>();
-        foreach (var g in scene.LabelledLines.Where(f => isVisible(f.Category) && theme.PaintOf(f.Category).Stroke != 0).GroupBy(f => f.Name!))
+        var labelled = new HashSet<string>();
+        foreach (var f in scene.LabelledLines)
         {
-            var f = g.OrderByDescending(x => x.LengthMetres).First();
-            double size = 10.5 * k;
-            if (f.LengthMetres * scale < g.Key.Length * size * 0.62 + 12) continue;
+            if (!isVisible(f.Category) || theme.PaintOf(f.Category).Stroke == 0 || !labelled.Add(f.Name!)) continue;
+            string name = f.Name!;
+            double size = 10.5 * k, tw = TextWidth(name, size, false);
+            if (f.LengthMetres * scale < name.Length * size * 0.62 + 12) continue;
             var pts = f.Parts.OrderByDescending(p => p.Length).First();
             var (sx, sy) = toPage(pts[0], pts[1]);
             var (ex, ey) = toPage(pts[^2], pts[^1]);
             if (!Inside((sx + ex) / 2, (sy + ey) / 2)) continue;
+            var (mx, my, angle) = Midpoint(pts, toPage);
+            double c = Math.Abs(Math.Cos(angle)), s = Math.Abs(Math.Sin(angle));
+            double bw = tw * c + size * s, bh = tw * s + size * c;
+            if (!TryReserve(new Box(mx - bw / 2, my - bh / 2, bw, bh))) continue;
             bool reverse = ex < sx;
             var sb = new StringBuilder();
             for (int i = 0; i < pts.Length; i += 2)
@@ -195,7 +250,7 @@ public static class SvgExporter
             w.WriteAttributeString("id", pid);
             w.WriteAttributeString("d", sb.ToString().TrimEnd());
             w.WriteEndElement();
-            paths.Add((pid, g.Key, size));
+            paths.Add((pid, name, size));
         }
         w.WriteEndElement();
         foreach (var (pid, name, size) in paths)
@@ -215,13 +270,33 @@ public static class SvgExporter
             w.WriteEndElement();
         }
 
-        foreach (var f in scene.Points.Where(f => f.Category == Category.TransitStop && f.Name != null && isVisible(f.Category)))
-        {
-            var (x, y) = toPage(f.Parts[0][0], f.Parts[0][1]);
-            if (!Inside(x, y)) continue;
-            Text(w, f.Name!, x + 6 * theme.StopScale, y, 9 * k, theme.StopText, "600", "start", 2.5 * k);
-        }
+        foreach (var (name, x, y, size) in stops)
+            Text(w, name, x, y, size, theme.StopText, "600", "start", 2.5 * k);
         w.WriteEndElement();
+    }
+
+    /// <summary>The page point halfway along a polyline, and the direction of the segment it falls on.</summary>
+    private static (double X, double Y, double Angle) Midpoint(double[] pts, Func<double, double, (double X, double Y)> toPage)
+    {
+        var page = new List<(double X, double Y)>();
+        for (int i = 0; i < pts.Length; i += 2) page.Add(toPage(pts[i], pts[i + 1]));
+        double total = 0;
+        for (int i = 1; i < page.Count; i++) total += Dist(page[i - 1], page[i]);
+        double half = total / 2;
+        for (int i = 1; i < page.Count; i++)
+        {
+            double d = Dist(page[i - 1], page[i]);
+            if (d >= half && d > 0)
+            {
+                double t = half / d;
+                var (a, b) = (page[i - 1], page[i]);
+                return (a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t, Math.Atan2(b.Y - a.Y, b.X - a.X));
+            }
+            half -= d;
+        }
+        return (page[^1].X, page[^1].Y, 0);
+
+        static double Dist((double X, double Y) a, (double X, double Y) b) => Math.Sqrt((b.X - a.X) * (b.X - a.X) + (b.Y - a.Y) * (b.Y - a.Y));
     }
 
     private static void WriteText(XmlWriter w, PosterSpec spec, PosterLayout l)
@@ -342,17 +417,23 @@ public static class SvgExporter
             w.WriteAttributeString("stroke-dasharray", string.Join(" ", s.Dash.Select(d => F(d * s.Width))));
     }
 
-    private static string PathData(IEnumerable<MapFeature> features, bool closed)
+    /// <param name="oriented">Turn every outline the same way (holes the other way) for non-zero filling.</param>
+    private static string PathData(IEnumerable<MapFeature> features, bool closed, bool oriented = false)
     {
         var sb = new StringBuilder();
         foreach (var f in features)
         {
-            foreach (var p in f.Parts)
+            for (int r = 0; r < f.Parts.Count; r++)
             {
+                var p = f.Parts[r];
                 if (p.Length < 4) continue;
-                sb.Append('M').Append(F1(p[0])).Append(',').Append(F1(-p[1]));
-                for (int i = 2; i < p.Length; i += 2)
-                    sb.Append(' ').Append(F1(p[i])).Append(',').Append(F1(-p[i + 1]));
+                bool reverse = oriented && (MapFeature.SignedArea(p) < 0) != (r >= f.Parts.Count - f.HoleCount);
+                int n = p.Length / 2;
+                for (int k = 0; k < n; k++)
+                {
+                    int i = (reverse ? n - 1 - k : k) * 2;
+                    sb.Append(k == 0 ? "M" : " ").Append(F1(p[i])).Append(',').Append(F1(-p[i + 1]));
+                }
                 if (closed) sb.Append('Z');
                 sb.Append(' ');
             }
