@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CityPrint.App.ViewModels"
+             xmlns:map="using:CityPrint.Core.Map"
+             x:Class="CityPrint.App.Views.StatsPanel"
+             x:DataType="vm:AppState">
+  <ScrollViewer Margin="8,6">
+    <ItemsControl ItemsSource="{Binding Stats}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:StatGroup">
+          <StackPanel>
+            <TextBlock Classes="header" Text="{Binding Name}" />
+            <ItemsControl ItemsSource="{Binding Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="map:StatRow">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                    <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                    <SelectableTextBlock Grid.Column="1" Classes="mono" Text="{Binding Value}" Margin="8,0,0,0" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </ScrollViewer>
+</UserControl>

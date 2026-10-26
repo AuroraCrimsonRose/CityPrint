@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CityPrint.App.ViewModels"
+             xmlns:c="using:CityPrint.App.Controls"
+             x:Class="CityPrint.App.Views.LayersPanel"
+             x:DataType="vm:AppState">
+  <DockPanel Margin="8,6">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="2" Margin="0,0,0,2">
+      <Button Classes="tool" Click="OnAll" ToolTip.Tip="Show all layers">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <c:Icon Data="{StaticResource Icon.Eye}" Size="14" />
+          <TextBlock Text="All" />
+        </StackPanel>
+      </Button>
+      <Button Classes="tool" Click="OnNone" ToolTip.Tip="Hide all layers">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <c:Icon Data="{StaticResource Icon.EyeOff}" Size="14" />
+          <TextBlock Text="None" />
+        </StackPanel>
+      </Button>
+    </StackPanel>
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Layers}" Margin="0,0,14,0">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:LayerItem">
+            <StackPanel>
+              <TextBlock Classes="header" Text="{Binding Group, Converter={x:Static vm:Converters.Upper}}" IsVisible="{Binding IsFirstInGroup}" />
+              <Grid ColumnDefinitions="Auto,*,Auto" Opacity="{Binding Count, Converter={x:Static vm:Converters.CountToOpacity}}">
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsVisible}" MinHeight="22" Padding="4,0" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                  <Border Classes="swatch" Background="{Binding Swatch}" />
+                  <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Classes="muted mono" FontSize="11" Text="{Binding Count, StringFormat={}{0:N0}}" VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

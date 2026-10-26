@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CityPrint.App.ViewModels"
+             xmlns:c="using:CityPrint.App.Controls"
+             x:Class="CityPrint.App.Views.ExplorerPanel"
+             x:DataType="vm:AppState">
+  <DockPanel Margin="8,8,8,6">
+    <Panel DockPanel.Dock="Top">
+      <TextBox x:Name="Search" Text="{Binding SearchText}" PlaceholderText="Search names, ids, layers, key=value" Padding="28,5,8,5" />
+      <c:Icon Data="{StaticResource Icon.Search}" Size="14" Foreground="{DynamicResource App.Muted}"
+              HorizontalAlignment="Left" Margin="9,0,0,0" IsHitTestVisible="False" />
+    </Panel>
+    <TextBlock DockPanel.Dock="Top" Classes="muted" FontSize="11" Margin="2,6,2,4" Text="{Binding SearchSummary}" />
+    <TreeView x:Name="Tree" ItemsSource="{Binding ExplorerRoots}" SelectionChanged="OnSelectionChanged" DoubleTapped="OnDoubleTapped"
+              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+      <TreeView.Styles>
+        <Style Selector="TreeViewItem" x:DataType="vm:ExplorerNode">
+          <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+        </Style>
+      </TreeView.Styles>
+      <TreeView.ItemTemplate>
+        <TreeDataTemplate x:DataType="vm:ExplorerNode" ItemsSource="{Binding Children}">
+          <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2" ToolTip.Tip="{Binding Tip}">
+            <Border Grid.Column="0" Classes="swatch" Width="10" Height="10" Margin="0,0,8,0" Background="{Binding Swatch}" IsVisible="{Binding !IsSection}" />
+            <TextBlock Grid.Column="1" Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                       Classes.section="{Binding IsSection}" />
+            <TextBlock Grid.Column="2" Classes="muted" FontSize="11" Text="{Binding Detail}" Margin="10,0,4,0" VerticalAlignment="Center" />
+          </Grid>
+        </TreeDataTemplate>
+      </TreeView.ItemTemplate>
+    </TreeView>
+  </DockPanel>
+  <UserControl.Styles>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+  </UserControl.Styles>
+</UserControl>

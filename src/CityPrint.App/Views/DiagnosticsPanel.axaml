@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CityPrint.App.ViewModels"
+             x:Class="CityPrint.App.Views.DiagnosticsPanel"
+             x:DataType="vm:AppState">
+  <DockPanel Margin="8,4">
+    <TextBlock DockPanel.Dock="Top" Classes="muted" FontSize="11" Margin="2,0,0,4" Text="{Binding DiagnosticsSummary}" />
+    <ListBox x:Name="List" ItemsSource="{Binding Diagnostics}" DoubleTapped="OnDoubleTapped">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:DiagnosticRow">
+          <Grid ColumnDefinitions="74,*">
+            <Border Background="{Binding LevelBrush}" CornerRadius="3" Padding="6,1" HorizontalAlignment="Left" VerticalAlignment="Top">
+              <TextBlock Text="{Binding LevelText}" FontSize="10" FontWeight="Bold" Foreground="White" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{Binding Message}" TextWrapping="Wrap" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</UserControl>

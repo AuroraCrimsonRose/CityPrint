@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CityPrint.App.ViewModels"
+             xmlns:c="using:CityPrint.App.Controls"
+             xmlns:map="using:CityPrint.Core.Map"
+             x:Class="CityPrint.App.Views.PosterView"
+             x:DataType="vm:PosterViewModel">
+  <Grid ColumnDefinitions="290,*">
+    <!-- Settings -->
+    <Border Grid.Column="0" Background="{DynamicResource App.Bg1}" BorderBrush="{DynamicResource App.Border}" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Bottom" Margin="14,10" Spacing="6">
+          <TextBlock Classes="muted" FontSize="11" Text="{Binding SizeText}" />
+          <Grid ColumnDefinitions="*,6,*">
+            <Button Grid.Column="0" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnExportPng">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <c:Icon Data="{StaticResource Icon.Image}" />
+                <TextBlock Text="Export PNG" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnExportSvg">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <c:Icon Data="{StaticResource Icon.FileCode}" />
+                <TextBlock Text="Export SVG" />
+              </StackPanel>
+            </Button>
+          </Grid>
+          <TextBlock x:Name="ExportStatus" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ScrollViewer>
+          <StackPanel Margin="14,8,18,8" Spacing="4">
+            <TextBlock Classes="header" Text="TEXT" Margin="0,4,0,4" />
+            <TextBox Text="{Binding Title}" PlaceholderText="Title" />
+            <TextBox Text="{Binding Subtitle}" PlaceholderText="Subtitle" />
+            <TextBox Text="{Binding Caption}" PlaceholderText="Caption" />
+
+            <TextBlock Classes="header" Text="STYLE" />
+            <TextBlock Classes="muted" FontSize="11" Text="Map theme" />
+            <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="map:MapTheme">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Classes="swatch" Width="14" Height="14" Background="{Binding Background, Converter={x:Static vm:Converters.ArgbToBrush}}">
+                      <Border Width="8" Height="3" CornerRadius="1.5" Background="{Binding Converter={x:Static vm:Converters.ThemeAccent}}" />
+                    </Border>
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" />
+                      <TextBlock Classes="muted" FontSize="10.5" Text="{Binding Description}" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Classes="muted" FontSize="11" Text="Layout" Margin="0,4,0,0" />
+            <ComboBox ItemsSource="{Binding Layouts}" SelectedItem="{Binding Layout}" HorizontalAlignment="Stretch" />
+
+            <TextBlock Classes="header" Text="PAPER" />
+            <ComboBox ItemsSource="{Binding Papers}" SelectedItem="{Binding Paper}" HorizontalAlignment="Stretch" />
+            <Grid ColumnDefinitions="*,*" Margin="0,2,0,0">
+              <RadioButton Grid.Column="0" Content="Portrait" IsChecked="{Binding !Landscape}" GroupName="orient" />
+              <RadioButton Grid.Column="1" Content="Landscape" IsChecked="{Binding Landscape}" GroupName="orient" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2,0,0">
+              <TextBlock Classes="muted" Text="Resolution (DPI)" VerticalAlignment="Center" Margin="0,0,10,0" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding DpiOptions}" SelectedItem="{Binding Dpi}" HorizontalAlignment="Stretch" />
+            </Grid>
+
+            <TextBlock Classes="header" Text="CONTENT" />
+            <CheckBox Content="Street and place labels" IsChecked="{Binding Labels}" />
+            <Grid ColumnDefinitions="Auto,*" IsEnabled="{Binding Labels}">
+              <TextBlock Classes="muted" Text="Label size" VerticalAlignment="Center" Margin="28,0,10,0" />
+              <Slider Grid.Column="1" Minimum="0.6" Maximum="2.5" Value="{Binding LabelScale}" />
+            </Grid>
+            <CheckBox Content="Scale bar" IsChecked="{Binding ScaleBar}" />
+            <CheckBox Content="Transit line legend" IsChecked="{Binding Legend}" />
+            <CheckBox Content="Real road widths" IsChecked="{Binding RealWidths}" />
+            <CheckBox Content="Only layers visible in the Layers panel" IsChecked="{Binding UseLayerVisibility}" />
+
+            <TextBlock Classes="header" Text="FRAMING" />
+            <TextBlock Classes="muted" FontSize="11" TextWrapping="Wrap" Text="Drag the preview to move the map, scroll to zoom." />
+            <Grid ColumnDefinitions="*,6,*" Margin="0,4,0,0">
+              <Button Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnFitCity">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <c:Icon Data="{StaticResource Icon.Maximize}" />
+                  <TextBlock Text="Fit city" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnUseView">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <c:Icon Data="{StaticResource Icon.Scan}" />
+                  <TextBlock Text="Map view" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Preview -->
+    <c:PosterCanvas Grid.Column="1" />
+  </Grid>
+</UserControl>

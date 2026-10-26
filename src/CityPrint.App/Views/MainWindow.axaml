@@ -1,0 +1,219 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CityPrint.App.ViewModels"
+        xmlns:views="using:CityPrint.App.Views"
+        xmlns:c="using:CityPrint.App.Controls"
+        xmlns:chrome="using:Avalonia.Controls.Chrome"
+        xmlns:map="using:CityPrint.Core.Map"
+        x:Class="CityPrint.App.Views.MainWindow"
+        x:DataType="vm:AppState"
+        Title="{Binding Title}"
+        Width="1500" Height="920" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="40">
+  <DockPanel>
+
+    <!-- Title bar: drag region with the menu inline; native caption buttons sit on the right. -->
+    <Border DockPanel.Dock="Top" Height="40" Background="{DynamicResource App.Bg0}"
+            chrome:WindowDecorationProperties.ElementRole="TitleBar">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,150">
+        <Border Grid.Column="0" Width="22" Height="22" Margin="12,0,6,0" CornerRadius="5"
+                Background="{DynamicResource App.Accent}" VerticalAlignment="Center">
+          <c:Icon Data="{StaticResource Icon.Map}" Size="15" Foreground="{DynamicResource App.OnAccent}" StrokeWidth="2.2" />
+        </Border>
+
+        <Menu Grid.Column="1" Classes="titlebar" chrome:WindowDecorationProperties.ElementRole="User">
+          <MenuItem Header="_File">
+            <MenuItem Header="_Open…" InputGesture="Ctrl+O" Click="OnOpen">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.FolderOpen}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Open _game export" InputGesture="Ctrl+G" Click="OnOpenGameExport">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Download}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="RecentMenu" Header="Open _recent">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.RotateCcwClock}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_Reload" InputGesture="F5" Click="OnReload">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.RefreshCw}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Auto-reload on change" ToggleType="CheckBox" IsChecked="{Binding AutoReload}" />
+            <Separator />
+            <MenuItem Header="Export map _image…" InputGesture="Ctrl+E" Click="OnExportView">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Image}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_New poster" InputGesture="Ctrl+P" Click="OnPoster">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Frame}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="_Settings…" InputGesture="Ctrl+OemComma" Click="OnSettings">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Settings}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="E_xit" Click="OnExit" />
+          </MenuItem>
+          <MenuItem Header="_View">
+            <MenuItem Header="_Fit to data" InputGesture="F" Click="OnFit">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Maximize}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Zoom _in" InputGesture="OemPlus" Click="OnZoomIn">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.ZoomIn}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Zoom _out" InputGesture="OemMinus" Click="OnZoomOut">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.ZoomOut}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Zoom to _selection" InputGesture="Z" Click="OnZoomSelection">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Crosshair}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Labels" ToggleType="CheckBox" IsChecked="{Binding ShowLabels}" />
+            <MenuItem Header="Real road widths" ToggleType="CheckBox" IsChecked="{Binding RealWidths}" />
+            <MenuItem Header="Map edge (14.3 km)" ToggleType="CheckBox" IsChecked="{Binding ShowMapBounds}" />
+            <MenuItem Header="Tile grid (23 × 23)" ToggleType="CheckBox" IsChecked="{Binding ShowTileGrid}" />
+            <Separator />
+            <MenuItem x:Name="ThemeMenu" Header="Map _theme">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Palette}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_App appearance">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Moon}" /></MenuItem.Icon>
+              <MenuItem Header="Dark" Click="OnAppDark" />
+              <MenuItem Header="Light" Click="OnAppLight" />
+              <MenuItem Header="Follow system" Click="OnAppSystem" />
+            </MenuItem>
+          </MenuItem>
+          <MenuItem Header="_Help">
+            <MenuItem Header="Open game export folder" Click="OnOpenExportFolder">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.ExternalLink}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Open settings folder" Click="OnOpenSettingsFolder">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.ExternalLink}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="About City Print" Click="OnAbout">
+              <MenuItem.Icon><c:Icon Data="{StaticResource Icon.Info}" /></MenuItem.Icon>
+            </MenuItem>
+          </MenuItem>
+        </Menu>
+
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsHitTestVisible="False">
+          <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="City Print" Classes="muted" VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Toolbar -->
+    <Border DockPanel.Dock="Top" Background="{DynamicResource App.Bg0}" BorderBrush="{DynamicResource App.Border}" BorderThickness="0,0,0,1" Padding="8,2,8,4">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+          <Button Classes="tool" ToolTip.Tip="Toggle light / dark app theme" Click="OnToggleAppTheme">
+            <c:Icon x:Name="AppThemeIcon" Data="{StaticResource Icon.Sun}" />
+          </Button>
+          <Button Classes="tool" ToolTip.Tip="Settings (Ctrl+,)" Click="OnSettings">
+            <c:Icon Data="{StaticResource Icon.Settings}" />
+          </Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="2">
+          <Button Classes="tool" ToolTip.Tip="Open… (Ctrl+O)" Click="OnOpen"><c:Icon Data="{StaticResource Icon.FolderOpen}" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Open game export (Ctrl+G)" Click="OnOpenGameExport"><c:Icon Data="{StaticResource Icon.Download}" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Reload (F5)" Click="OnReload"><c:Icon Data="{StaticResource Icon.RefreshCw}" /></Button>
+          <Separator Classes="vertical" />
+          <Button Classes="tool" ToolTip.Tip="Fit to data (F)" Click="OnFit"><c:Icon Data="{StaticResource Icon.Maximize}" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Zoom in (+)" Click="OnZoomIn"><c:Icon Data="{StaticResource Icon.ZoomIn}" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Zoom out (−)" Click="OnZoomOut"><c:Icon Data="{StaticResource Icon.ZoomOut}" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Zoom to selection (Z)" Click="OnZoomSelection"><c:Icon Data="{StaticResource Icon.Crosshair}" /></Button>
+          <Separator Classes="vertical" />
+          <ToggleButton Classes="tool" ToolTip.Tip="Labels" IsChecked="{Binding ShowLabels}"><c:Icon Data="{StaticResource Icon.Type}" /></ToggleButton>
+          <ToggleButton Classes="tool" ToolTip.Tip="Real road widths" IsChecked="{Binding RealWidths}"><c:Icon Data="{StaticResource Icon.Ruler}" /></ToggleButton>
+          <ToggleButton Classes="tool" ToolTip.Tip="Map boundary" IsChecked="{Binding ShowMapBounds}"><c:Icon Data="{StaticResource Icon.SquareDashed}" /></ToggleButton>
+          <ToggleButton Classes="tool" ToolTip.Tip="Tile grid" IsChecked="{Binding ShowTileGrid}"><c:Icon Data="{StaticResource Icon.Grid3x3}" /></ToggleButton>
+          <Separator Classes="vertical" />
+          <c:Icon Data="{StaticResource Icon.Palette}" Foreground="{DynamicResource App.Muted}" Margin="4,0" />
+          <ComboBox ItemsSource="{Binding MapThemeList}" SelectedItem="{Binding MapTheme}" MinWidth="150" VerticalAlignment="Center" ToolTip.Tip="Map theme">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="map:MapTheme">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border Classes="swatch" Width="14" Height="14" Background="{Binding Background, Converter={x:Static vm:Converters.ArgbToBrush}}">
+                    <Border Width="8" Height="3" CornerRadius="1.5" Background="{Binding Converter={x:Static vm:Converters.ThemeAccent}}" />
+                  </Border>
+                  <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Separator Classes="vertical" />
+          <Button Classes="tool" ToolTip.Tip="Export the current view as an image (Ctrl+E)" Click="OnExportView">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <c:Icon Data="{StaticResource Icon.Image}" />
+              <TextBlock Text="Export" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="PosterButton" Classes="tool" ToolTip.Tip="Design a printable poster of your city (Ctrl+P)" Click="OnPoster">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <c:Icon Data="{StaticResource Icon.Frame}" />
+              <TextBlock Text="Poster" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom" Classes="statusbar">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <ProgressBar IsIndeterminate="True" Width="60" MinWidth="60" IsVisible="{Binding IsLoading}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Classes="mono" FontSize="11.5" Text="{Binding CursorText}" Margin="16,0" />
+        <TextBlock Grid.Column="2" Classes="mono" FontSize="11.5" Text="{Binding ScaleText}" MinWidth="110" TextAlignment="Right" />
+      </Grid>
+    </Border>
+
+    <DockControl x:Name="Dock" InitializeLayout="True" InitializeFactory="True">
+      <DockControl.Factory>
+        <Factory />
+      </DockControl.Factory>
+      <RootDock x:Name="Root" Id="Root" IsCollapsable="False" DefaultDockable="{Binding #MainLayout}">
+        <ProportionalDock x:Name="MainLayout" Id="MainLayout" CanFloat="False" CanDrag="False" CanDrop="False" Orientation="Horizontal">
+
+          <ToolDock x:Name="LeftPane" Id="LeftPane" CanFloat="False" CanDrag="False" CanDrop="False" Proportion="0.19" Alignment="Left" ActiveDockable="{Binding #ExplorerTool}">
+            <Tool x:Name="ExplorerTool" Id="Explorer" Title="Explorer" CanClose="False" CanFloat="False" CanDrag="False" CanDrop="False" CanDockAsDocument="False" CanPin="False">
+              <views:ExplorerPanel />
+            </Tool>
+            <Tool x:Name="LayersTool" Id="Layers" Title="Layers" CanClose="False" CanFloat="False" CanDrag="False" CanDrop="False" CanDockAsDocument="False" CanPin="False">
+              <views:LayersPanel />
+            </Tool>
+          </ToolDock>
+
+          <ProportionalDockSplitter />
+
+          <ProportionalDock Id="CenterColumn" CanFloat="False" CanDrag="False" CanDrop="False" Orientation="Vertical" Proportion="0.59">
+            <DocumentDock x:Name="Documents" Id="Documents" CanFloat="False" CanDrag="False" CanDrop="False" Proportion="0.8" CanCreateDocument="False" ActiveDockable="{Binding #MapDocument}">
+              <Document x:Name="MapDocument" Id="Map" Title="Map" CanClose="False" CanFloat="False" CanDrag="False" CanDrop="False">
+                <c:MapView />
+              </Document>
+            </DocumentDock>
+            <ProportionalDockSplitter />
+            <ToolDock x:Name="BottomPane" Id="BottomPane" CanFloat="False" CanDrag="False" CanDrop="False" Proportion="0.2" Alignment="Bottom" ActiveDockable="{Binding #DiagnosticsTool}">
+              <Tool x:Name="DiagnosticsTool" Id="Diagnostics" Title="Diagnostics" CanClose="False" CanFloat="False" CanDrag="False" CanDrop="False" CanDockAsDocument="False" CanPin="False">
+                <views:DiagnosticsPanel />
+              </Tool>
+            </ToolDock>
+          </ProportionalDock>
+
+          <ProportionalDockSplitter />
+
+          <ToolDock x:Name="RightPane" Id="RightPane" CanFloat="False" CanDrag="False" CanDrop="False" Proportion="0.22" Alignment="Right" ActiveDockable="{Binding #InspectorTool}">
+            <Tool x:Name="InspectorTool" Id="Inspector" Title="Inspector" CanClose="False" CanFloat="False" CanDrag="False" CanDrop="False" CanDockAsDocument="False" CanPin="False">
+              <views:InspectorPanel />
+            </Tool>
+            <Tool x:Name="StatsTool" Id="Statistics" Title="Statistics" CanClose="False" CanFloat="False" CanDrag="False" CanDrop="False" CanDockAsDocument="False" CanPin="False">
+              <views:StatsPanel />
+            </Tool>
+          </ToolDock>
+
+        </ProportionalDock>
+      </RootDock>
+    </DockControl>
+  </DockPanel>
+</Window>

@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CityPrint.App.ViewModels"
+        xmlns:c="using:CityPrint.App.Controls"
+        xmlns:map="using:CityPrint.Core.Map"
+        xmlns:s="using:CityPrint.App.Services"
+        x:Class="CityPrint.App.Views.SettingsWindow"
+        x:DataType="vm:AppState"
+        Title="Settings"
+        Width="520" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource App.Bg0}" BorderBrush="{DynamicResource App.Border}" BorderThickness="0,1,0,0" Padding="16,10">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Classes="primary" Content="Done" MinWidth="90" HorizontalContentAlignment="Center" Click="OnClose" IsDefault="True" IsCancel="True" />
+        <Button DockPanel.Dock="Right" Margin="0,0,8,0" Click="OnReset" ToolTip.Tip="Themes, map options and poster defaults go back to their defaults. Recent files are kept.">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <c:Icon Data="{StaticResource Icon.RotateCcw}" Size="14" />
+            <TextBlock Text="Reset to defaults" />
+          </StackPanel>
+        </Button>
+        <TextBlock Classes="muted" FontSize="11" VerticalAlignment="Center" Text="{x:Static vm:SettingsInfo.Path}" TextTrimming="PathSegmentEllipsis" />
+      </DockPanel>
+    </Border>
+
+    <StackPanel Margin="20,8,20,16" Spacing="4">
+      <TextBlock Classes="header" Text="APPEARANCE" />
+      <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto" >
+        <TextBlock Text="App theme" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14">
+          <RadioButton x:Name="DarkRadio" Content="Dark" GroupName="apptheme" Click="OnAppTheme" />
+          <RadioButton x:Name="LightRadio" Content="Light" GroupName="apptheme" Click="OnAppTheme" />
+          <RadioButton x:Name="SystemRadio" Content="Follow system" GroupName="apptheme" Click="OnAppTheme" />
+        </StackPanel>
+        <TextBlock Grid.Row="1" Text="Map theme" VerticalAlignment="Center" Margin="0,6,0,0" />
+        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding MapThemeList}" SelectedItem="{Binding MapTheme}" HorizontalAlignment="Stretch" Margin="0,6,0,0">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="map:MapTheme">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Classes="swatch" Width="14" Height="14" Background="{Binding Background, Converter={x:Static vm:Converters.ArgbToBrush}}">
+                  <Border Width="8" Height="3" CornerRadius="1.5" Background="{Binding Converter={x:Static vm:Converters.ThemeAccent}}" />
+                </Border>
+                <TextBlock Text="{Binding Name}" />
+                <TextBlock Classes="muted" Text="{Binding Description}" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </Grid>
+
+      <TextBlock Classes="header" Text="MAP" />
+      <CheckBox Content="Labels" IsChecked="{Binding ShowLabels}" />
+      <CheckBox Content="Draw roads at their real width when zoomed in" IsChecked="{Binding RealWidths}" />
+      <CheckBox Content="Show the map edge (14.3 km, all 529 tiles)" IsChecked="{Binding ShowMapBounds}" />
+      <CheckBox Content="Show the 23 × 23 tile grid" IsChecked="{Binding ShowTileGrid}" />
+
+      <TextBlock Classes="header" Text="FILES" />
+      <CheckBox Content="Reload automatically when the export file changes" IsChecked="{Binding AutoReload}" />
+      <CheckBox x:Name="OpenLast" Content="Open the last file on startup" Click="OnOpenLast" />
+      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+        <Button Click="OnClearRecent" IsEnabled="{Binding HasRecentFiles}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <c:Icon Data="{StaticResource Icon.Trash}" Size="14" />
+            <TextBlock Text="Clear recent files" />
+          </StackPanel>
+        </Button>
+        <Button Click="OnOpenFolder">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <c:Icon Data="{StaticResource Icon.ExternalLink}" Size="14" />
+            <TextBlock Text="Open settings folder" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+
+      <TextBlock Classes="header" Text="ABOUT" />
+      <DockPanel>
+        <Border DockPanel.Dock="Left" Width="40" Height="40" CornerRadius="9" Margin="0,0,12,0"
+                Background="{DynamicResource App.Accent}" VerticalAlignment="Center">
+          <c:Icon Data="{StaticResource Icon.Map}" Size="24" Foreground="{DynamicResource App.OnAccent}" StrokeWidth="2.2" />
+        </Border>
+        <Button DockPanel.Dock="Right" VerticalAlignment="Center" Click="OnOpenRepo" IsEnabled="{x:Static s:AppInfo.HasRepo}"
+                ToolTip.Tip="{x:Static s:AppInfo.RepoUrl}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <c:Icon Data="{StaticResource Icon.ExternalLink}" Size="14" />
+            <TextBlock Text="Go to repository" />
+          </StackPanel>
+        </Button>
+        <StackPanel VerticalAlignment="Center" Spacing="1">
+          <TextBlock x:Name="AppNameText" FontWeight="SemiBold" />
+          <TextBlock Classes="muted">
+            <Run Text="Made with" />
+            <Run Text="♥" Foreground="{DynamicResource App.Danger}" />
+            <Run Text="by" />
+            <Run Text="{x:Static s:AppInfo.Author}" Foreground="{DynamicResource App.Text}" />
+          </TextBlock>
+        </StackPanel>
+      </DockPanel>
+    </StackPanel>
+  </DockPanel>
+</Window>

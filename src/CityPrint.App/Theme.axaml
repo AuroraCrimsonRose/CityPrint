@@ -1,0 +1,156 @@
+<!-- App palette: graphite surfaces with an amber accent. App.* brushes are used by our own views;
+     the Dock* keys override Dock.Avalonia's Fluent theme so the docking chrome matches. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="App.Bg0Color">#14161B</Color>
+      <Color x:Key="App.Bg1Color">#1A1D23</Color>
+      <Color x:Key="App.Bg2Color">#22262E</Color>
+      <Color x:Key="App.Bg3Color">#2B3039</Color>
+      <Color x:Key="App.BorderColor">#2C313A</Color>
+      <Color x:Key="App.BorderStrongColor">#3A404B</Color>
+      <Color x:Key="App.TextColor">#E6E8EC</Color>
+      <Color x:Key="App.MutedColor">#9AA3AF</Color>
+      <Color x:Key="App.AccentColor">#F0A040</Color>
+      <Color x:Key="App.OnAccentColor">#1A1206</Color>
+
+      <SolidColorBrush x:Key="App.Bg0" Color="#14161B" />
+      <SolidColorBrush x:Key="App.Bg1" Color="#1A1D23" />
+      <SolidColorBrush x:Key="App.Bg2" Color="#22262E" />
+      <SolidColorBrush x:Key="App.Bg3" Color="#2B3039" />
+      <SolidColorBrush x:Key="App.Border" Color="#2C313A" />
+      <SolidColorBrush x:Key="App.BorderStrong" Color="#3A404B" />
+      <SolidColorBrush x:Key="App.Text" Color="#E6E8EC" />
+      <SolidColorBrush x:Key="App.Muted" Color="#9AA3AF" />
+      <SolidColorBrush x:Key="App.Accent" Color="#F0A040" />
+      <SolidColorBrush x:Key="App.AccentSoft" Color="#33F0A040" />
+      <SolidColorBrush x:Key="App.OnAccent" Color="#1A1206" />
+      <SolidColorBrush x:Key="App.Danger" Color="#C4372C" />
+
+      <!-- Checked toggles (toolbar) use a soft accent tint rather than a solid accent fill. -->
+      <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="App.AccentSoft" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="App.AccentSoft" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="App.AccentSoft" />
+      <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="App.Accent" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="App.Accent" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="App.Accent" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="Transparent" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="Transparent" />
+
+      <SolidColorBrush x:Key="DockSurfaceWorkbenchBrush" Color="#14161B" />
+      <SolidColorBrush x:Key="DockSurfaceSidebarBrush" Color="#1A1D23" />
+      <SolidColorBrush x:Key="DockSurfaceEditorBrush" Color="#1A1D23" />
+      <SolidColorBrush x:Key="DockSurfacePanelBrush" Color="#1A1D23" />
+      <SolidColorBrush x:Key="DockSurfaceHeaderBrush" Color="#14161B" />
+      <SolidColorBrush x:Key="DockSurfaceHeaderActiveBrush" Color="#1A1D23" />
+      <SolidColorBrush x:Key="DockBorderSubtleBrush" Color="#2C313A" />
+      <SolidColorBrush x:Key="DockBorderStrongBrush" Color="#3A404B" />
+      <SolidColorBrush x:Key="DockSeparatorBrush" Color="#2C313A" />
+      <SolidColorBrush x:Key="DockSplitterIdleBrush" Color="#14161B" />
+      <SolidColorBrush x:Key="DockSplitterHoverBrush" Color="#3A404B" />
+      <SolidColorBrush x:Key="DockSplitterDragBrush" Color="#F0A040" />
+      <SolidColorBrush x:Key="DockTabBackgroundBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="DockTabHoverBackgroundBrush" Color="#22262E" />
+      <SolidColorBrush x:Key="DockTabActiveBackgroundBrush" Color="#1A1D23" />
+      <SolidColorBrush x:Key="DockTabActiveIndicatorBrush" Color="#F0A040" />
+      <SolidColorBrush x:Key="DockTabForegroundBrush" Color="#9AA3AF" />
+      <SolidColorBrush x:Key="DockTabSelectedForegroundBrush" Color="#E6E8EC" />
+      <SolidColorBrush x:Key="DockTabActiveForegroundBrush" Color="#E6E8EC" />
+      <SolidColorBrush x:Key="DockTabCloseHoverBackgroundBrush" Color="#3A404B" />
+      <SolidColorBrush x:Key="DockDocumentTabStripBackgroundBrush" Color="#14161B" />
+      <SolidColorBrush x:Key="DockDocumentTabSelectedForegroundBrush" Color="#E6E8EC" />
+      <SolidColorBrush x:Key="DockDocumentTabPointerOverForegroundBrush" Color="#E6E8EC" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushLow" Color="#B8782C" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushMed" Color="#D48E36" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushHigh" Color="#F0A040" />
+      <SolidColorBrush x:Key="DockApplicationAccentForegroundBrush" Color="#1A1206" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushIndicator" Color="#F0A040" />
+      <SolidColorBrush x:Key="DockThemeBorderLowBrush" Color="#2C313A" />
+      <SolidColorBrush x:Key="DockThemeBackgroundBrush" Color="#1A1D23" />
+      <SolidColorBrush x:Key="DockThemeAccentBrush" Color="#F0A040" />
+      <SolidColorBrush x:Key="DockThemeForegroundBrush" Color="#E6E8EC" />
+      <SolidColorBrush x:Key="DockThemeControlBackgroundBrush" Color="#1A1D23" />
+      <SolidColorBrush x:Key="DockTargetIndicatorBrush" Color="#80F0A040" />
+      <SolidColorBrush x:Key="DockChromeButtonHoverBackgroundBrush" Color="#2B3039" />
+      <SolidColorBrush x:Key="DockChromeButtonPressedBackgroundBrush" Color="#3A404B" />
+      <SolidColorBrush x:Key="DockChromeButtonDangerHoverBrush" Color="#C4372C" />
+      <SolidColorBrush x:Key="DockSelectorOverlayBackdropBrush" Color="#99000000" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="App.Bg0Color">#E7E9ED</Color>
+      <Color x:Key="App.Bg1Color">#F4F5F7</Color>
+      <Color x:Key="App.Bg2Color">#FFFFFF</Color>
+      <Color x:Key="App.Bg3Color">#E2E5EA</Color>
+      <Color x:Key="App.BorderColor">#D3D7DE</Color>
+      <Color x:Key="App.BorderStrongColor">#BCC2CC</Color>
+      <Color x:Key="App.TextColor">#1D2128</Color>
+      <Color x:Key="App.MutedColor">#5F6875</Color>
+      <Color x:Key="App.AccentColor">#D9822B</Color>
+      <Color x:Key="App.OnAccentColor">#FFFFFF</Color>
+
+      <SolidColorBrush x:Key="App.Bg0" Color="#E7E9ED" />
+      <SolidColorBrush x:Key="App.Bg1" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="App.Bg2" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="App.Bg3" Color="#E2E5EA" />
+      <SolidColorBrush x:Key="App.Border" Color="#D3D7DE" />
+      <SolidColorBrush x:Key="App.BorderStrong" Color="#BCC2CC" />
+      <SolidColorBrush x:Key="App.Text" Color="#1D2128" />
+      <SolidColorBrush x:Key="App.Muted" Color="#5F6875" />
+      <SolidColorBrush x:Key="App.Accent" Color="#D9822B" />
+      <SolidColorBrush x:Key="App.AccentSoft" Color="#33D9822B" />
+      <SolidColorBrush x:Key="App.OnAccent" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="App.Danger" Color="#C4372C" />
+
+      <!-- Checked toggles (toolbar) use a soft accent tint rather than a solid accent fill. -->
+      <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="App.AccentSoft" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="App.AccentSoft" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="App.AccentSoft" />
+      <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="App.Accent" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="App.Accent" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="App.Accent" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="Transparent" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="Transparent" />
+
+      <SolidColorBrush x:Key="DockSurfaceWorkbenchBrush" Color="#E7E9ED" />
+      <SolidColorBrush x:Key="DockSurfaceSidebarBrush" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="DockSurfaceEditorBrush" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="DockSurfacePanelBrush" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="DockSurfaceHeaderBrush" Color="#E7E9ED" />
+      <SolidColorBrush x:Key="DockSurfaceHeaderActiveBrush" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="DockBorderSubtleBrush" Color="#D3D7DE" />
+      <SolidColorBrush x:Key="DockBorderStrongBrush" Color="#BCC2CC" />
+      <SolidColorBrush x:Key="DockSeparatorBrush" Color="#D3D7DE" />
+      <SolidColorBrush x:Key="DockSplitterIdleBrush" Color="#E7E9ED" />
+      <SolidColorBrush x:Key="DockSplitterHoverBrush" Color="#BCC2CC" />
+      <SolidColorBrush x:Key="DockSplitterDragBrush" Color="#D9822B" />
+      <SolidColorBrush x:Key="DockTabBackgroundBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="DockTabHoverBackgroundBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="DockTabActiveBackgroundBrush" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="DockTabActiveIndicatorBrush" Color="#D9822B" />
+      <SolidColorBrush x:Key="DockTabForegroundBrush" Color="#5F6875" />
+      <SolidColorBrush x:Key="DockTabSelectedForegroundBrush" Color="#1D2128" />
+      <SolidColorBrush x:Key="DockTabActiveForegroundBrush" Color="#1D2128" />
+      <SolidColorBrush x:Key="DockTabCloseHoverBackgroundBrush" Color="#D3D7DE" />
+      <SolidColorBrush x:Key="DockDocumentTabStripBackgroundBrush" Color="#E7E9ED" />
+      <SolidColorBrush x:Key="DockDocumentTabSelectedForegroundBrush" Color="#1D2128" />
+      <SolidColorBrush x:Key="DockDocumentTabPointerOverForegroundBrush" Color="#1D2128" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushLow" Color="#E9A866" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushMed" Color="#E09548" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushHigh" Color="#D9822B" />
+      <SolidColorBrush x:Key="DockApplicationAccentForegroundBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="DockApplicationAccentBrushIndicator" Color="#D9822B" />
+      <SolidColorBrush x:Key="DockThemeBorderLowBrush" Color="#D3D7DE" />
+      <SolidColorBrush x:Key="DockThemeBackgroundBrush" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="DockThemeAccentBrush" Color="#D9822B" />
+      <SolidColorBrush x:Key="DockThemeForegroundBrush" Color="#1D2128" />
+      <SolidColorBrush x:Key="DockThemeControlBackgroundBrush" Color="#F4F5F7" />
+      <SolidColorBrush x:Key="DockTargetIndicatorBrush" Color="#80D9822B" />
+      <SolidColorBrush x:Key="DockChromeButtonHoverBackgroundBrush" Color="#E2E5EA" />
+      <SolidColorBrush x:Key="DockChromeButtonPressedBackgroundBrush" Color="#D3D7DE" />
+      <SolidColorBrush x:Key="DockChromeButtonDangerHoverBrush" Color="#C4372C" />
+      <SolidColorBrush x:Key="DockSelectorOverlayBackdropBrush" Color="#66000000" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

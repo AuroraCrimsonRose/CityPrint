@@ -1,0 +1,39 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CityPrint.App.App"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://CityPrint/Theme.axaml" />
+        <ResourceInclude Source="avares://CityPrint/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme DensityStyle="Compact">
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Dark"
+                               Accent="#F0A040"
+                               RegionColor="#1A1D23"
+                               AltHigh="#14161B" AltLow="#14161B" AltMedium="#14161B" AltMediumHigh="#14161B" AltMediumLow="#14161B"
+                               BaseHigh="#E6E8EC" BaseLow="#3A404B" BaseMedium="#9AA3AF" BaseMediumHigh="#C3C9D1" BaseMediumLow="#6B7380"
+                               ChromeAltLow="#C3C9D1" ChromeBlackHigh="#000000" ChromeBlackLow="#C3C9D1" ChromeBlackMedium="#000000" ChromeBlackMediumLow="#000000"
+                               ChromeDisabledHigh="#3A404B" ChromeDisabledLow="#9AA3AF" ChromeGray="#828A96"
+                               ChromeHigh="#828A96" ChromeLow="#1E2127" ChromeMedium="#22262E" ChromeMediumLow="#2B3039" ChromeWhite="#FFFFFF"
+                               ListLow="#22262E" ListMedium="#3A404B" ErrorText="#FF6A5C" />
+        <ColorPaletteResources x:Key="Light"
+                               Accent="#D9822B"
+                               RegionColor="#F4F5F7"
+                               AltHigh="#FFFFFF" AltLow="#FFFFFF" AltMedium="#FFFFFF" AltMediumHigh="#FFFFFF" AltMediumLow="#FFFFFF"
+                               BaseHigh="#1D2128" BaseLow="#D3D7DE" BaseMedium="#5F6875" BaseMediumHigh="#3A414C" BaseMediumLow="#8A929E"
+                               ChromeAltLow="#3A414C" ChromeBlackHigh="#000000" ChromeBlackLow="#D3D7DE" ChromeBlackMedium="#3A414C" ChromeBlackMediumLow="#8A929E"
+                               ChromeDisabledHigh="#D3D7DE" ChromeDisabledLow="#8A929E" ChromeGray="#5F6875"
+                               ChromeHigh="#BCC2CC" ChromeLow="#ECEEF1" ChromeMedium="#E7E9ED" ChromeMediumLow="#F4F5F7" ChromeWhite="#FFFFFF"
+                               ListLow="#E7E9ED" ListMedium="#D3D7DE" ErrorText="#C4372C" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <DockFluentTheme />
+    <StyleInclude Source="avares://CityPrint/Styles.axaml" />
+  </Application.Styles>
+</Application>

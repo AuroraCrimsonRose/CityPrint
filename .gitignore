@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+artifacts/
+
+# Local test data and third-party files that aren't part of City Print
+example/
+Export Mod/
+claude.md

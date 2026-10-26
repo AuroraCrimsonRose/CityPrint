@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CityPrint.App.ViewModels"
+             xmlns:c="using:CityPrint.App.Controls"
+             x:Class="CityPrint.App.Views.InspectorPanel"
+             x:DataType="vm:AppState">
+  <UserControl.DataTemplates>
+    <DataTemplate x:DataType="vm:TagRow">
+      <Grid ColumnDefinitions="0.42*,0.58*" Margin="0,2">
+        <SelectableTextBlock Grid.Column="0" Classes="mono" Foreground="{DynamicResource App.Muted}" Text="{Binding Key}" TextWrapping="Wrap" Margin="0,0,8,0" />
+        <SelectableTextBlock Grid.Column="1" Classes="mono" Text="{Binding Value}" TextWrapping="Wrap" />
+      </Grid>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+  <Panel Margin="10,8">
+    <StackPanel IsVisible="{Binding !HasSelection}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8" Margin="0,0,0,60">
+      <c:Icon Data="{StaticResource Icon.MapPin}" Size="28" Foreground="{DynamicResource App.Muted}" />
+      <TextBlock Classes="muted" Text="Click a feature on the map, or a street in the Explorer." TextWrapping="Wrap" TextAlignment="Center" MaxWidth="220" />
+    </StackPanel>
+    <ScrollViewer IsVisible="{Binding HasSelection}">
+      <StackPanel Margin="0,0,10,0">
+        <TextBlock Classes="title" Text="{Binding InspectorTitle}" TextWrapping="Wrap" />
+        <TextBlock Classes="muted" FontSize="11.5" Text="{Binding InspectorSubtitle}" TextWrapping="Wrap" Margin="0,2,0,0" />
+        <WrapPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <Button Click="OnZoom" Margin="0,0,6,6" Padding="8,3">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <c:Icon Data="{StaticResource Icon.Crosshair}" Size="14" />
+              <TextBlock Text="Zoom to" />
+            </StackPanel>
+          </Button>
+          <Button Click="OnWholeStreet" Margin="0,0,6,6" Padding="8,3" IsVisible="{Binding SelectedGroup, Converter={x:Static ObjectConverters.IsNull}}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <c:Icon Data="{StaticResource Icon.Route}" Size="14" />
+              <TextBlock Text="Whole street" />
+            </StackPanel>
+          </Button>
+          <Button Click="OnCopy" Margin="0,0,6,6" Padding="8,3">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <c:Icon Data="{StaticResource Icon.Copy}" Size="14" />
+              <TextBlock Text="Copy tags" />
+            </StackPanel>
+          </Button>
+        </WrapPanel>
+        <TextBlock Classes="header" Text="PROPERTIES" />
+        <ItemsControl ItemsSource="{Binding SelectedInfo}" />
+        <TextBlock Classes="header" Text="{Binding TagsHeader, Converter={x:Static vm:Converters.Upper}}" />
+        <TextBlock Classes="muted" Text="(none)" IsVisible="{Binding !SelectedTags.Count}" />
+        <ItemsControl ItemsSource="{Binding SelectedTags}" />
+      </StackPanel>
+    </ScrollViewer>
+  </Panel>
+</UserControl>
